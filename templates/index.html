@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Portfolio Simulator</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: #1a2534; /* Matches your dark background */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px; /* Space before the form */
+        }
+        .logo {
+            max-width: 80%; /* Reduced for smaller screens */
+            max-height: 60vh; /* Adjusted height for balance */
+            width: auto;
+            height: auto;
+        }
+        .powered-by {
+            margin-top: 1px; /* Space between logo and text */
+            font-size: 1.2em; /* White for better visibility on dark background */
+            font-family: Arial, sans-serif; /* Clean, readable font */
+        }
+        .form-container {
+            width: 100%;
+            max-width: 400px; /* Limits form width for better mobile experience */
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.1); /* Slight transparency for contrast */
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .form-container input, .form-container select, .form-container button {
+            width: 100%;
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #4a5568;
+            border-radius: 4px;
+            background-color: #2d3748;
+            color: #1a2534;
+        }
+        .form-container button {
+            background-color: #e53e3e; /* Red button color */
+            border: none;
+            cursor: pointer;
+        }
+        .form-container button:hover {
+            background-color: #c53030; /* Darker red on hover */
+        }
+
+        .form-control{
+            background-color: white;
+            color: #1a2534;
+        }
+
+        .container-logo{
+            max-width: 600px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        @media (max-width: 96px) {
+            .logo {
+                max-width: 10%;
+                max-height: 5vh;
+            }
+            .powered-by {
+                font-size: 1em;
+            }
+            .form-container {
+                max-width: 90%; /* Fuller width on mobile */
+            }
+        }
+    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        };
+    </script>
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+
+</head>
+
+<body class="bg-gray-900 text-gray-100 font-sans">
+    <div class="container-logo">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="logo">
+        <p class="powered-by">Powered by Hanuman Dynamics©</p>
+    </div>
+    <a href="{{ url_for('donate') }}" class="inline-flex items-center px-6 py-3 bg-gray-600 text-white rounded-md hover:bg-gray-700" target="_blank">Donate</a>
+    <div class="max-w-2xl mx-auto p-6">
+        <div class="bg-gray-800 rounded-lg shadow-md p-6">
+            <h2 class="text-2xl font-bold text-center text-blue-400 mb-6">Crypto Portfolio Simulator</h2>
+            <form action="/simulate" method="post" id="simulatorForm" onsubmit="return validateForm()">
+                <input type="hidden" name="portfolio_count" id="portfolioCountInput" value="0">
+                <div id="portfoliosContainer">
+                    <!-- Start Date -->
+                    <div class="mb-4">
+                        <label for="start-date" class="block text-gray-200 font-semibold mb-2">Start Date</label>
+                        <input type="date" id="start-date" name="start_date" required
+                            class="w-full p-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+                    </div>
+                    <!-- End Date -->
+                    <div class="mb-4">
+                        <label for="end-date" class="block text-gray-200 font-semibold mb-2">End Date</label>
+                        <input type="date" id="end-date" name="end_date" required
+                            class="w-full p-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+                    </div>
+                    <!-- Initial Capital -->
+                    <div class="mb-4">
+                        <label for="initial-capital" class="block text-gray-200 font-semibold mb-2">Initial Capital ($)</label>
+                        <input type="number" id="initial-capital" name="initial_capital" value="10000" min="100"
+                            class="w-full p-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+                    </div>
+                    <!-- ML Model Selection -->
+                    <div class="mb-4">
+                        <!-- Add this within the form in index.html, just before the submit button -->
+                        <div class="form-group">
+                          <label for="ml_model">Select Prediction Model:</label>
+                          <select class="form-control" id="ml_model" name="ml_model">
+                            <option value="LSTM">LSTM (Long Short-Term Memory)</option>
+                            <option value="GRU">GRU (Gated Recurrent Unit)</option>
+                            <option value="BiLSTM">Bidirectional LSTM</option>
+                            <option value="BiGRU">Bidirectional GRU</option>
+                            <option value="CNN">1D CNN</option>
+                            <option value="CNN-GRU">CNN-GRU Hybrid</option>
+                            <option value="Transformer">Transformer</option>
+                            <option value="TimeDistributed">TimeDistributed</option>
+                          </select>
+
+                        </div>
+                    </div>
+                </div>
+                <!-- Add Portfolio Button -->
+                <button type="button" id="addPortfolioBtn"
+                    class="w-full py-3 bg-blue-500 text-gray-900 font-semibold rounded-lg hover:bg-blue-600 hover:text-white transition">
+                    Add New Portfolio
+                </button>
+                <!-- Submit All Portfolios -->
+                <button type="submit" id="simulateBtn"
+                    class="w-full py-3 bg-blue-500 text-gray-900 font-semibold rounded-lg hover:bg-blue-600 hover:text-white transition disabled:opacity-50 disabled:cursor-not-allowed mt-6">
+                    Simulate All Portfolios
+                </button>
+            </form>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+    <script>
+        let portfolioCounter = 0;
+        const cryptoOptions = [{'value': '1INCH', 'text': '1inch (1INCH)'},
+            {'value': 'AAVE', 'text': 'Aave (AAVE)'},
+            {'value': 'ADA', 'text': 'Cardano (ADA)'},
+            {'value': 'AKRO', 'text': 'Akropolis (AKRO)'},
+            {'value': 'ALGO', 'text': 'Algorand (ALGO)'},
+            {'value': 'ALICE', 'text': 'MyNeighborAlice (ALICE)'},
+            {'value': 'ANKR', 'text': 'Ankr (ANKR)'},
+            {'value': 'APE', 'text': 'ApeCoin (APE)'},
+            {'value': 'API3', 'text': 'API3 (API3)'},
+            {'value': 'AR', 'text': 'Arweave (AR)'},
+            {'value': 'ARPA', 'text': 'ARPA Chain (ARPA)'},
+            {'value': 'ATOM', 'text': 'Cosmos (ATOM)'},
+            {'value': 'AUDIO', 'text': 'Audius (AUDIO)'},
+            {'value': 'AVAX', 'text': 'Avalanche (AVAX)'},
+            {'value': 'AXS', 'text': 'Axie Infinity (AXS)'},
+            {'value': 'BADGER', 'text': 'Badger DAO (BADGER)'},
+            {'value': 'BAL', 'text': 'Balancer (BAL)'},
+            {'value': 'BAND', 'text': 'Band Protocol (BAND)'},
+            {'value': 'BAT', 'text': 'Basic Attention Token (BAT)'},
+            {'value': 'BEL', 'text': 'Bella Protocol (BEL)'},
+            {'value': 'BCH', 'text': 'Bitcoin Cash (BCH)'},
+            {'value': 'BLZ', 'text': 'Bluzelle (BLZ)'},
+            {'value': 'BMI', 'text': 'Bridge Mutual (BMI)'},
+            {'value': 'BNB', 'text': 'Binance Coin (BNB)'},
+            {'value': 'BNT', 'text': 'Bancor (BNT)'},
+            {'value': 'BOND', 'text': 'BarnBridge (BOND)'},
+            {'value': 'BTC', 'text': 'Bitcoin (BTC)'},
+            {'value': 'BUSD', 'text': 'Binance USD (BUSD)'},
+            {'value': 'C98', 'text': 'Coin98 (C98)'},
+            {'value': 'CELO', 'text': 'Celo (CELO)'},
+            {'value': 'CELR', 'text': 'Celer Network (CELR)'},
+            {'value': 'CHZ', 'text': 'Chiliz (CHZ)'},
+            {'value': 'COMP', 'text': 'Compound (COMP)'},
+            {'value': 'CRV', 'text': 'Curve DAO Token (CRV)'},
+            {'value': 'CRO', 'text': 'Crypto.com Coin (CRO)'},
+            {'value': 'CTSI', 'text': 'Cartesi (CTSI)'},
+            {'value': 'CVC', 'text': 'Civic (CVC)'},
+            {'value': 'DAG', 'text': 'Constellation (DAG)'},
+            {'value': 'DAI', 'text': 'Dai (DAI)'},
+            {'value': 'DASH', 'text': 'Dash (DASH)'},
+            {'value': 'DCR', 'text': 'Decred (DCR)'},
+            {'value': 'DGB', 'text': 'DigiByte (DGB)'},
+            {'value': 'DEXE', 'text': 'DeXe (DEXE)'},
+            {'value': 'DODO', 'text': 'DODO (DODO)'},
+            {'value': 'DOGE', 'text': 'Dogecoin (DOGE)'},
+            {'value': 'DOT', 'text': 'Polkadot (DOT)'},
+            {'value': 'EASY', 'text': 'EasyFi (EASY)'},
+            {'value': 'ELF', 'text': 'aelf (ELF)'},
+            {'value': 'ENJ', 'text': 'Enjin Coin (ENJ)'},
+            {'value': 'EOS', 'text': 'EOS (EOS)'},
+            {'value': 'ERN', 'text': 'Ethernity Chain (ERN)'},
+            {'value': 'ETC', 'text': 'Ethereum Classic (ETC)'},
+            {'value': 'ETH', 'text': 'Ethereum (ETH)'},
+            {'value': 'FET', 'text': 'Fetch.ai (FET)'},
+            {'value': 'FIL', 'text': 'Filecoin (FIL)'},
+            {'value': 'FRONT', 'text': 'Frontier (FRONT)'},
+            {'value': 'FTM', 'text': 'Fantom (FTM)'},
+            {'value': 'GALA', 'text': 'Gala (GALA)'},
+            {'value': 'GRT', 'text': 'The Graph (GRT)'},
+            {'value': 'HBAR', 'text': 'Hedera Hashgraph (HBAR)'},
+            {'value': 'HNT', 'text': 'Helium (HNT)'},
+            {'value': 'HOT', 'text': 'Holo (HOT)'},
+            {'value': 'ICP', 'text': 'Internet Computer (ICP)'},
+            {'value': 'IDEX', 'text': 'IDEX (IDEX)'},
+            {'value': 'INJ', 'text': 'Injective (INJ)'},
+            {'value': 'IOST', 'text': 'IOST (IOST)'},
+            {'value': 'IOTX', 'text': 'IoTeX (IOTX)'},
+            {'value': 'IRIS', 'text': 'IRISnet (IRIS)'},
+            {'value': 'JST', 'text': 'JUST (JST)'},
+            {'value': 'JUV', 'text': 'Juventus Fan Token (JUV)'},
+            {'value': 'KAVA', 'text': 'Kava.io (KAVA)'},
+            {'value': 'KCS', 'text': 'KuCoin Token (KCS)'},
+            {'value': 'KDA', 'text': 'Kadena (KDA)'},
+            {'value': 'KNC', 'text': 'Kyber Network (KNC)'},
+            {'value': 'KSM', 'text': 'Kusama (KSM)'},
+            {'value': 'LINA', 'text': 'Linear (LINA)'},
+            {'value': 'LINK', 'text': 'Chainlink (LINK)'},
+            {'value': 'LIT', 'text': 'Litentry (LIT)'},
+            {'value': 'LPT', 'text': 'Livepeer (LPT)'},
+            {'value': 'LRC', 'text': 'Loopring (LRC)'},
+            {'value': 'LTC', 'text': 'Litecoin (LTC)'},
+            {'value': 'LUNA', 'text': 'Terra (LUNA)'},
+            {'value': 'MASK', 'text': 'Mask Network (MASK)'},
+            {'value': 'MATIC', 'text': 'Polygon (MATIC)'},
+            {'value': 'MCO', 'text': 'Crypto.com (MCO)'},
+            {'value': 'MKR', 'text': 'Maker (MKR)'},
+            {'value': 'MXC', 'text': 'MXC (MXC)'},
+            {'value': 'NEAR', 'text': 'NEAR Protocol (NEAR)'},
+            {'value': 'NEO', 'text': 'NEO (NEO)'},
+            {'value': 'OMG', 'text': 'OMG Network (OMG)'},
+            {'value': 'UNI', 'text': 'Uniswap (UNI)'},
+            {'value': 'XLM', 'text': 'Stellar (XLM)'},
+            {'value': 'XMR', 'text': 'Monero (XMR)'},
+            {'value': 'XRP', 'text': 'Ripple (XRP)'},
+            {'value': 'XTZ', 'text': 'Tezos (XTZ)'},
+            {'value': 'YFI', 'text': 'yearn.finance (YFI)'},
+            {'value': 'ZEC', 'text': 'Zcash (ZEC)'},
+            {'value': 'ZIL', 'text': 'Zilliqa (ZIL)'},
+            {'value': 'ZRX', 'text': '0x (ZRX)'}];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            addNewPortfolio();
+        });
+
+        document.getElementById('addPortfolioBtn').addEventListener('click', addNewPortfolio);
+
+        function addNewPortfolio() {
+            portfolioCounter++;
+            const portfolioId = 'portfolio_' + (portfolioCounter - 1);
+
+            document.getElementById('portfolioCountInput').value = portfolioCounter;
+
+            const portfolioContainer = document.createElement('div');
+            portfolioContainer.className = 'bg-gray-700 rounded-lg p-6 mb-6';
+            portfolioContainer.id = portfolioId;
+
+            const portfolioTitle = document.createElement('h3');
+            portfolioTitle.className = 'text-lg font-bold text-gray-200 mb-4 flex justify-between items-center';
+            portfolioTitle.innerHTML = `
+                <span>Portfolio ${portfolioCounter}</span>
+                <button type="button"
+                        class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                        onclick="deletePortfolio('${portfolioId}')">
+                    Delete
+                </button>
+            `;
+
+            portfolioContainer.appendChild(portfolioTitle);
+
+            // Cryptocurrency Selector
+            const cryptoSelect = document.createElement('select');
+            cryptoSelect.name = `crypto_${portfolioCounter - 1}[]`;
+            cryptoSelect.id = `${portfolioId}_cryptoSelect`;
+            cryptoSelect.multiple = 'multiple';
+            cryptoSelect.className = 'w-full p-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400';
+            cryptoSelect.setAttribute('placeholder', 'Start typing...');
+            portfolioContainer.appendChild(cryptoSelect);
+
+            cryptoOptions.forEach(option => {
+                const optElement = document.createElement('option');
+                optElement.value = option.value;
+                optElement.textContent = option.text;
+                cryptoSelect.appendChild(optElement);
+            });
+
+            const allocationsContainer = document.createElement('div');
+            allocationsContainer.id = `${portfolioId}_allocationSliders`;
+            allocationsContainer.className = 'mt-4 space-y-2';
+            portfolioContainer.appendChild(allocationsContainer);
+
+            const totalAllocationDisplay = document.createElement('div');
+            totalAllocationDisplay.id = `${portfolioId}_totalAllocation`;
+            totalAllocationDisplay.className = 'text-right mt-2 font-semibold';
+            totalAllocationDisplay.textContent = 'Total Allocation: 0%';
+            portfolioContainer.appendChild(totalAllocationDisplay);
+
+            document.getElementById('portfoliosContainer').appendChild(portfolioContainer);
+
+            const tomSelectInstance = new TomSelect(`#${portfolioId}_cryptoSelect`, {
+                plugins: ['remove_button'],
+                maxItems: 10,
+                placeholder: 'Start typing...',
+                closeAfterSelect: true,
+                onChange: () => updateAllocations(portfolioId)
+            });
+
+            checkAllPortfoliosAllocation(); // Check allocations after adding a new portfolio
+        }
+
+        function deletePortfolio(portfolioId) {
+            const portfolio = document.getElementById(portfolioId);
+            if (portfolio) {
+                // Get the TomSelect instance for this portfolio's crypto selector
+                const selectElement = document.querySelector(`#${portfolioId}_cryptoSelect`);
+                if (selectElement && selectElement.tomselect) {
+                    selectElement.tomselect.destroy(); // Clean up TomSelect instance
+                }
+
+                portfolio.remove();
+                portfolioCounter--;
+                document.getElementById('portfolioCountInput').value = portfolioCounter;
+
+                // Renumber remaining portfolios
+                const portfolios = document.querySelectorAll('[id^="portfolio_"]');
+                portfolios.forEach((p, index) => {
+                    // Update portfolio container ID
+                    p.id = `portfolio_${index}`;
+
+                    // Update portfolio title
+                    const title = p.querySelector('h3');
+                    title.innerHTML = `
+                        <span>Portfolio ${index + 1}</span>
+                        <button type="button"
+                                class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                                onclick="deletePortfolio('portfolio_${index}')">
+                            Delete
+                        </button>
+                    `;
+
+                    // Update crypto select
+                    const cryptoSelect = p.querySelector('select');
+                    if (cryptoSelect) {
+                        cryptoSelect.name = `crypto_${index}[]`;
+                        cryptoSelect.id = `portfolio_${index}_cryptoSelect`;
+                    }
+
+                    // Update allocation sliders
+                    const sliders = p.querySelectorAll('input[type="range"]');
+                    sliders.forEach(slider => {
+                        const crypto = slider.name.split('allocation_')[1];
+                        slider.name = `portfolio_${index}_allocation_${crypto}`;
+                    });
+
+                    // Update allocation container ID
+                    const allocationContainer = p.querySelector('[id$="_allocationSliders"]');
+                    if (allocationContainer) {
+                        allocationContainer.id = `portfolio_${index}_allocationSliders`;
+                    }
+
+                    // Update total allocation display ID
+                    const totalAllocation = p.querySelector('[id$="_totalAllocation"]');
+                    if (totalAllocation) {
+                        totalAllocation.id = `portfolio_${index}_totalAllocation`;
+                    }
+                });
+
+                // If no portfolios left, add a new empty one
+                if (portfolioCounter === 0) {
+                    addNewPortfolio();
+                }
+
+                checkAllPortfoliosAllocation(); // Recheck allocations after deletion
+            }
+        }
+
+        function updateAllocations(portfolioId) {
+            const select = document.querySelector(`#${portfolioId}_cryptoSelect`).tomselect;
+            const selectedCryptos = select.items;
+            const slidersContainer = document.getElementById(`${portfolioId}_allocationSliders`);
+            slidersContainer.innerHTML = '';
+
+            const defaultAllocation = Math.floor(100 / selectedCryptos.length);
+
+            selectedCryptos.forEach(crypto => {
+                const container = document.createElement('div');
+                container.className = 'flex items-center justify-between bg-gray-600 rounded-lg p-2 mb-2';
+
+                const label = document.createElement('div');
+                label.className = 'font-semibold text-gray-200';
+                const cryptoOption = cryptoOptions.find(opt => opt.value === crypto);
+                label.textContent = cryptoOption ? cryptoOption.text : crypto;
+
+                const slider = document.createElement('input');
+                slider.type = 'range';
+                slider.min = 0;
+                slider.max = 100;
+                slider.value = defaultAllocation;
+                slider.className = 'w-full mx-4 bg-gray-500';
+                slider.name = `portfolio_${portfolioId.split('_')[1]}_allocation_${crypto}`;
+
+                const value = document.createElement('div');
+                value.className = 'text-gray-200 font-medium min-w-[4rem] text-right';
+                value.textContent = slider.value + '%';
+
+                slider.addEventListener('input', function() {
+                    value.textContent = this.value + '%';
+                    calculateTotalAllocation(portfolioId);
+                });
+
+                container.appendChild(label);
+                container.appendChild(slider);
+                container.appendChild(value);
+                slidersContainer.appendChild(container);
+            });
+
+            calculateTotalAllocation(portfolioId);
+        }
+
+        function calculateTotalAllocation(portfolioId) {
+            const sliders = document.querySelectorAll(`#${portfolioId}_allocationSliders input[type="range"]`);
+            const totalAllocation = Array.from(sliders)
+                .reduce((sum, slider) => sum + parseInt(slider.value), 0);
+
+            const totalAllocationDisplay = document.getElementById(`${portfolioId}_totalAllocation`);
+            totalAllocationDisplay.textContent = `Total Allocation: ${totalAllocation}%`;
+
+            if (totalAllocation !== 100) {
+                totalAllocationDisplay.style.color = 'red';
+            } else {
+                totalAllocationDisplay.style.color = '#10B981'; // Green color for valid allocation
+            }
+
+            checkAllPortfoliosAllocation(); // Check all portfolios after any change
+        }
+
+
+        function checkAllPortfoliosAllocation() {
+            const portfolios = document.querySelectorAll('[id^="portfolio_"]');
+            let allValid = portfolios.length > 0; // At least one portfolio must exist
+
+            // Check each portfolio's allocation
+            portfolios.forEach(portfolio => {
+                const portfolioId = portfolio.id;
+                const totalAllocationDisplay = document.getElementById(`${portfolioId}_totalAllocation`);
+
+                if (totalAllocationDisplay) {
+                    const totalAllocation = parseInt(totalAllocationDisplay.textContent.match(/\d+/)[0]);
+                    if (totalAllocation !== 100) {
+                        allValid = false;
+                    }
+                } else {
+                    allValid = false; // If no allocations, it's not valid
+                }
+            });
+
+            return allValid;
+        }
+
+       function validateForm() {
+            const submitBtn = document.getElementById('simulateBtn');
+            const startDate = document.getElementById('start-date').value;
+            const endDate = document.getElementById('end-date').value;
+            const initialCapital = document.getElementById('initial-capital').value;
+
+            // Check if basic required fields are filled
+            if (!startDate || !endDate || !initialCapital) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Please Fill All Required Fields';
+                return false;
+            }
+
+            // Validate dates
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            if (start >= end) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'End Date Must Be After Start Date';
+                return false;
+            }
+
+            // Validate initial capital
+            if (initialCapital < 100) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Initial Capital Must Be At Least $100';
+                return false;
+            }
+
+            // Get all portfolios
+            const portfolios = document.querySelectorAll('[id^="portfolio_"]');
+
+            // Check if there's at least one portfolio
+            if (portfolios.length === 0) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Add At Least One Portfolio';
+                return false;
+            }
+
+            // Check each portfolio's allocation
+            let validPortfoliosCount = 0;
+            portfolios.forEach(portfolio => {
+                const portfolioId = portfolio.id;
+                const totalAllocationDisplay = document.getElementById(`${portfolioId}_totalAllocation`);
+                const cryptoSelect = portfolio.querySelector('select');
+
+                // Check if portfolio has cryptos selected and 100% allocation
+                if (totalAllocationDisplay &&
+                    cryptoSelect &&
+                    cryptoSelect.tomselect.items.length > 0) {
+                    const totalAllocation = parseInt(totalAllocationDisplay.textContent.match(/\d+/)[0]);
+                    if (totalAllocation === 100) {
+                        validPortfoliosCount++;
+                    }
+                }
+            });
+
+            // If at least one portfolio is valid (has 100% allocation), enable submission
+            if (validPortfoliosCount = portfolios.length) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Simulate All Portfolios';
+                return true;
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'All Portfolios Must Have 100% Allocation';
+                return false;
+            }
+        }
+
+        // Add event listeners to trigger validation
+        document.getElementById('start-date').addEventListener('change', validateForm);
+        document.getElementById('end-date').addEventListener('change', validateForm);
+        document.getElementById('initial-capital').addEventListener('input', validateForm);
+        document.getElementById('ml-model').addEventListener('change', validateForm);
+        document.getElementById('simulatorForm').addEventListener('submit', function(e) {
+            if (!validateForm()) {
+                e.preventDefault();
+            }
+        });
+
+    </script>
+</body>
+
+</html>

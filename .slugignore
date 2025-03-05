@@ -1,0 +1,12 @@
+*.pyc
+__pycache__
+*.log
+*.md
+tests/
+docs/
+*.ipynb
+*.jpg
+*.pdf
+static/*.html  # If generated dynamically
+simulations/
+tasks/

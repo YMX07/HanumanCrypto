@@ -1,0 +1,63 @@
+# Python Virtual Environment
+venv/
+*.venv/
+env/
+.venv/
+
+# Python Bytecode and Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+pip-selfcheck.json
+
+# Static Generated Files
+static/*
+!static/.gitkeep  # Optionally keep an empty file to preserve the directory in Git
+
+# Task and Simulation Data
+tasks/*
+!tasks/.gitkeep
+
+# Logs and Temporary Files
+*.log
+*.log.*
+*.tmp
+*.bak
+*.swp
+
+# Dependency and Build Files
+*.egg-info/
+*.egg
+dist/
+build/
+wheels/
+*.whl
+.tox/
+.coverage
+coverage.xml
+htmlcov/
+
+# macOS and Windows System Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE and Editor Files
+*.idea/
+.vscode/
+*.sublime-workspace
+*.sublime-project
+
+# Docker and Heroku-Specific
+Dockerfile.local
+*.dockerignore
+heroku.yml.local
+Procfile.local
+
+# Miscellaneous
+*.md  # Exclude READMEs if they’re not needed in deployed app
+*.ipynb
+*.zip
+*.tar.gz

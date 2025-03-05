@@ -1,0 +1,13 @@
+build:
+  docker:
+    web: Dockerfile
+    worker: Dockerfile
+release:
+  image: web
+run:
+  web: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1
+  worker: celery -A app worker -l info
+setup:
+  addons:
+    - plan: heroku-redis:mini
+      as: REDIS

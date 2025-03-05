@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Simulation Status</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --success-color: #198754;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --secondary-color: #6c757d;
+        }
+        .progress {
+            height: 1.5rem;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+        .task-card {
+            transition: box-shadow 0.3s ease;
+        }
+        .task-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .refresh-container {
+            margin: 1.5rem 0;
+            text-align: center;
+        }
+        .error-pre {
+            background-color: #f8d7da;
+            border: 1px solid #f5c2c7;
+            padding: 0.5rem;
+            font-size: 0.875rem;
+            max-height: 10rem;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        footer {
+            margin-top: 2rem;
+            padding: 1rem 0;
+            text-align: center;
+            color: var(--secondary-color);
+        }
+        .container-logo{
+            max-width: 600px;
+            margin: 0 auto;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-logo">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="logo">
+        <p class="powered-by">Powered by Hanuman Dynamics©</p>
+    </div>
+    <div class="container py-5">
+        <h1 class="text-center mb-4 fw-bold">Portfolio Simulation Status</h1>
+
+        <!-- Overall Progress Card -->
+        <div class="card mb-5 shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Overall Progress</h4>
+            </div>
+            <div class="card-body">
+                <div class="progress mb-3">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                         role="progressbar"
+                         style="width: {{ overall_progress }}%;"
+                         aria-valuenow="{{ overall_progress }}"
+                         aria-valuemin="0"
+                         aria-valuemax="100"
+                         id="overall-progress-bar">
+                        {{ overall_progress }}%
+                    </div>
+                </div>
+                <p class="text-center mb-0">
+                    <strong>{{ completed_tasks }} of {{ total_tasks }}</strong> portfolios completed
+                    {% if failed_tasks > 0 %}
+                        <span class="text-danger"> ({{ failed_tasks }} failed)</span>
+                    {% endif %}
+                </p>
+                {% if all_completed %}
+                    <div class="text-center mt-4">
+                        <a href="{{ url_for('results', batch_id=batch_id) }}" class="btn btn-success btn-lg px-4">View Results</a>
+                    </div>
+                {% else %}
+                    <div class="refresh-container">
+                        <p class="text-muted mb-2">Refreshing every 10 seconds...</p>
+                        <button id="refresh-btn" class="btn btn-outline-primary">Refresh Now</button>
+                        <div id="refresh-error" class="text-danger mt-2" style="display: none;"></div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Individual Tasks Section -->
+        <h3 class="mb-4 fw-semibold">Individual Tasks</h3>
+        <div class="row row-cols-1 row-cols-md-2 g-4">
+            {% for task in task_statuses %}
+                <div class="col">
+                    <div class="card task-card h-100 shadow-sm">
+                        <div class="card-header
+                            {% if task['status'] == 'COMPLETED' %}bg-success text-white
+                            {% elif task['status'] == 'FAILED' %}bg-danger text-white
+                            {% elif task['status'] == 'PROCESSING' %}bg-warning text-dark
+                            {% else %}bg-secondary text-white{% endif %}">
+                            <h5 class="mb-0">Portfolio {{ task['portfolio_index'] + 1 }}</h5>
+                            <p class="mb-0">
+                                <strong>Status:</strong>
+                                <span id="status-{{ task['portfolio_index'] }}">{{ task['status']|title }}</span>
+                            </p>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-2">
+                                <strong>Message:</strong>
+                                <span id="message-{{ task['portfolio_index'] }}">{{ task['message'] }}</span>
+                            </p>
+                            <div class="progress mb-3">
+                                <div class="progress-bar
+                                    {% if task['status'] == 'PROCESSING' %}progress-bar-striped progress-bar-animated{% endif %}
+                                    {% if task['status'] == 'COMPLETED' %}bg-success{% endif %}
+                                    {% if task['status'] == 'FAILED' %}bg-danger{% endif %}"
+                                    role="progressbar"
+                                    style="width: {{ task['progress'] }}%;"
+                                    aria-valuenow="{{ task['progress'] }}"
+                                    aria-valuemin="0"
+                                    aria-valuemax="100"
+                                    id="progress-{{ task['portfolio_index'] }}">
+                                    {{ task['progress'] }}%
+                                </div>
+                            </div>
+                            {% if task['status'] == 'FAILED' and task['error'] %}
+                                <div class="mt-3">
+                                    <p class="text-danger mb-1"><strong>Error:</strong></p>
+                                    <pre class="error-pre">{{ task['error'] }}</pre>
+                                </div>
+                            {% endif %}
+
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Footer with Back Link -->
+        <footer>
+            <a href="{{ url_for('index') }}" class="btn btn-outline-primary me-2">Back to Home</a>
+            <a href="{{ url_for('donate') }}" class="btn btn-outline-primary me-2" target="_blank">Support Us</a>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.1.slim.min.js" integrity="sha256-kmHvs0B+OpCW5GVHUNjv9rOmY0IvSIRcf7zGUDTDQM8=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+    <script>
+        // Constants
+        const REFRESH_INTERVAL = 10000; // 10 seconds
+        const TASK_IDS = [
+            {% for task in task_statuses %}
+                "{{ batch_id }}_{{ task['portfolio_index'] }}",
+            {% endfor %}
+        ];
+        const TOTAL_TASKS = {{ total_tasks }};
+
+        // Auto-refresh if not all tasks are completed
+        let refreshInterval;
+        {% if not all_completed %}
+            refreshInterval = setInterval(updateTaskStatus, REFRESH_INTERVAL);
+        {% endif %}
+
+        // Manual refresh button
+        document.getElementById('refresh-btn')?.addEventListener('click', () => {
+            clearInterval(refreshInterval);
+            updateTaskStatus();
+            refreshInterval = setInterval(updateTaskStatus, REFRESH_INTERVAL);
+        });
+
+        function updateTaskStatus() {
+            const refreshError = document.getElementById('refresh-error');
+            refreshError.style.display = 'none';
+
+            let completedCount = 0;
+            let failedCount = 0;
+            let totalProgress = 0;
+
+            const fetchPromises = TASK_IDS.map(taskId =>
+                fetch(`/task_status/${taskId}`, { cache: 'no-store' })
+                    .then(response => {
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        return response.json();
+                    })
+                    .then(data => {
+                        const idx = data['portfolio_index'];
+                        const statusElem = document.getElementById(`status-${idx}`);
+                        const messageElem = document.getElementById(`message-${idx}`);
+                        const progressBar = document.getElementById(`progress-${idx}`);
+                        const initialCapitalElem = document.getElementById(`initial-capital-${idx}`);
+
+                        if (statusElem) statusElem.textContent = data['status'].charAt(0).toUpperCase() + data['status'].slice(1).toLowerCase();
+                        if (messageElem) messageElem.textContent = data['message'];
+                        if (progressBar) {
+                            progressBar.style.width = `${data['progress']}%`;
+                            progressBar.setAttribute('aria-valuenow', data['progress']);
+                            progressBar.textContent = `${data['progress']}%`;
+                            progressBar.className = 'progress-bar';
+                            if (data['status'] === 'PROCESSING') {
+                                progressBar.classList.add('progress-bar-striped', 'progress-bar-animated');
+                            } else if (data['status'] === 'COMPLETED') {
+                                progressBar.classList.add('bg-success');
+                            } else if (data['status'] === 'FAILED') {
+                                progressBar.classList.add('bg-danger');
+                            }
+                        }
+                        // Update initial capital without '$' prefix, assuming backend provides formatted string
+                        if (initialCapitalElem && 'initial_capital' in data) {
+                            initialCapitalElem.textContent = data['initial_capital'];
+                        }
+
+                        if (data['status'] === 'COMPLETED') completedCount++;
+                        if (data['status'] === 'FAILED') failedCount++;
+                        totalProgress += data['progress'] || 0;
+                    })
+                    .catch(error => {
+                        console.error(`Error fetching ${taskId}:`, error);
+                        refreshError.textContent = 'Failed to update some tasks. Retrying...';
+                        refreshError.style.display = 'block';
+                    })
+            );
+
+            Promise.allSettled(fetchPromises).then(() => {
+                const overallProgress = Math.round(totalProgress / TOTAL_TASKS);
+                const progressBar = document.getElementById('overall-progress-bar');
+                progressBar.style.width = `${overallProgress}%`;
+                progressBar.setAttribute('aria-valuenow', overallProgress);
+                progressBar.textContent = `${overallProgress}%`;
+
+                document.querySelector('.text-center strong').textContent = `${completedCount} of ${TOTAL_TASKS}`;
+                const failedSpan = document.querySelector('.text-danger');
+                if (failedCount > 0 && failedSpan) failedSpan.textContent = ` (${failedCount} failed)`;
+
+                if (completedCount + failedCount === TOTAL_TASKS) {
+                    clearInterval(refreshInterval);
+                    setTimeout(() => window.location.href = `/results/{{ batch_id }}`, 500);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
