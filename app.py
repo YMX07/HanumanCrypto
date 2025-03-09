@@ -1377,5 +1377,5 @@ def create_distribution_plots(returns, portfolio_index):
     return f'portfolio_{portfolio_index}_distribution_interactive.html'
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port, debug=False)
