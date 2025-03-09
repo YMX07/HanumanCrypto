@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DCA Simulation Results - Crypto Portfolio Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: { colors: { 'dark-bg': '#1a2534', 'dca-blue': '#60A5FA' } } }
+        };
+    </script>
+    <style>
+        .btn { transition: background-color 0.3s ease, transform 0.2s ease; }
+        .btn:hover { transform: translateY(-2px); }
+        .section-header { border-bottom: 2px solid #60A5FA; padding-bottom: 0.5rem; }
+    </style>
+</head>
+<body class="bg-dark-bg text-gray-100 font-sans min-h-screen flex flex-col items-center p-4">
+
+    <header class="text-center py-6">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Crypto Portfolio Simulator Logo" class="logo mx-auto">
+        <h1 class="text-4xl font-bold text-dca-blue">Dollar Cost Averaging (DCA) Results</h1>
+        <p class="text-lg text-white mt-2">Powered by Hanuman Dynamics©</p>
+    </header>
+
+    <main class="w-full max-w-5xl">
+        <div class="bg-gray-800 rounded-lg shadow-md p-8">
+            {% if result %}
+                <section class="mb-8">
+                    <h2 class="text-2xl font-semibold text-dca-blue section-header mb-4">Overview</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <p><strong>Strategy:</strong> DCA ({{ result.frequency | capitalize }})</p>
+                            <p><strong>Start Date:</strong> {{ result.start_date }}</p>
+                            <p><strong>End Date:</strong> {{ result.end_date }}</p>
+                            <p><strong>Total Capital Invested:</strong> ${{ result.initial_capital }}</p>
+                            <p><strong>Final Portfolio Value:</strong> ${{ result.final_value }}</p>
+                            <p><strong>Performance:</strong> {{ result.performance }}%</p>
+                        </div>
+                        <div>
+                            <p><strong>Cryptocurrencies & Allocations:</strong></p>
+                            <ul class="list-disc pl-5">
+                                {% for i in range(result.cryptos|length) %}
+                                    <li>{{ result.cryptos[i] }}: {{ result.allocations[i] }}</li>
+                                {% endfor %}
+                            </ul>
+                            <p><strong>Number of Investments:</strong> {{ result.investment_dates|length }}</p>
+                            <p><strong>First Investment:</strong> {{ result.investment_dates[0] }}</p>
+                            <p><strong>Last Investment:</strong> {{ result.investment_dates[-1] }}</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="mb-8">
+                    <h2 class="text-2xl font-semibold text-dca-blue section-header mb-4">Financial Metrics</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {% for key, value in result.financial_metrics.items() %}
+                            <p><strong>{{ key }}:</strong> {{ value }}</p>
+                        {% endfor %}
+                    </div>
+                </section>
+
+                <section>
+                    <h2 class="text-2xl font-semibold text-dca-blue section-header mb-4">Visualizations</h2>
+                    <div class="space-y-8">
+                        {% if result.interactive_portfolio %}
+                            <div>
+                                <h3 class="text-xl font-medium text-gray-200 mb-2">Portfolio Value Over Time</h3>
+                                <iframe src="{{ url_for('static', filename=result.interactive_portfolio) }}" width="100%" height="600" frameborder="0" class="rounded-lg"></iframe>
+                            </div>
+                        {% endif %}
+                        {% if result.correlation_matrix_image %}
+                            <div>
+                                <h3 class="text-xl font-medium text-gray-200 mb-2">Cryptocurrency Correlation</h3>
+                                <iframe src="{{ url_for('static', filename=result.correlation_matrix_image) }}" width="100%" height="600" frameborder="0" class="rounded-lg"></iframe>
+                            </div>
+                        {% endif %}
+                        {% if result.interactive_distribution %}
+                            <div>
+                                <h3 class="text-xl font-medium text-gray-200 mb-2">Returns Distribution</h3>
+                                <iframe src="{{ url_for('static', filename=result.interactive_distribution) }}" width="100%" height="600" frameborder="0" class="rounded-lg"></iframe>
+                            </div>
+                        {% endif %}
+                        {% if result.monte_carlo_chart %}
+                            <div>
+                                <h3 class="text-xl font-medium text-gray-200 mb-2">Monte Carlo Projection</h3>
+                                <iframe src="{{ url_for('static', filename=result.monte_carlo_chart) }}" width="100%" height="600" frameborder="0" class="rounded-lg"></iframe>
+                            </div>
+                        {% endif %}
+                    </div>
+                </section>
+            {% else %}
+                <p class="text-red-400 text-lg">Simulation failed. Please check your inputs and try again.</p>
+            {% endif %}
+        </div>
+    </main>
+
+    <footer class="text-center py-8">
+        <a href="/" class="inline-flex items-center px-6 py-3 bg-red-600 text-white rounded-md hover:bg-red-700 transition btn mr-4" aria-label="Back to Home">Back to Home</a>
+        <a href="{{ url_for('donate') }}" class="inline-flex items-center px-6 py-3 bg-red-600 text-white rounded-md hover:bg-red-700 transition btn" target="_blank" aria-label="Donate">Donate</a>
+        <p class="text-lg text-gray-300 mt-4">Powered by Hanuman Dynamics©</p>
+    </footer>
+</body>
+</html>

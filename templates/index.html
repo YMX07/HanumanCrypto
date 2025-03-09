@@ -1,134 +1,80 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Simulate cryptocurrency portfolios, DCA strategies, or test co-integration between two cryptos.">
     <title>Crypto Portfolio Simulator</title>
-    <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            background-color: #1a2534; /* Matches your dark background */
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-        .header {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-bottom: 20px; /* Space before the form */
-        }
-        .logo {
-            max-width: 80%; /* Reduced for smaller screens */
-            max-height: 60vh; /* Adjusted height for balance */
-            width: auto;
-            height: auto;
-        }
-        .powered-by {
-            margin-top: 1px; /* Space between logo and text */
-            font-size: 1.2em; /* White for better visibility on dark background */
-            font-family: Arial, sans-serif; /* Clean, readable font */
-        }
-        .form-container {
-            width: 100%;
-            max-width: 400px; /* Limits form width for better mobile experience */
-            padding: 20px;
-            background-color: rgba(255, 255, 255, 0.1); /* Slight transparency for contrast */
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .form-container input, .form-container select, .form-container button {
-            width: 100%;
-            margin: 10px 0;
-            padding: 10px;
-            border: 1px solid #4a5568;
-            border-radius: 4px;
-            background-color: #2d3748;
-            color: #1a2534;
-        }
-        .form-container button {
-            background-color: #e53e3e; /* Red button color */
-            border: none;
-            cursor: pointer;
-        }
-        .form-container button:hover {
-            background-color: #c53030; /* Darker red on hover */
-        }
-
-        .form-control{
-            background-color: white;
-            color: #1a2534;
-        }
-
-        .container-logo{
-            max-width: 600px;
-            margin: 0 auto;
-            text-align: center;
-        }
-
-        @media (max-width: 96px) {
-            .logo {
-                max-width: 10%;
-                max-height: 5vh;
-            }
-            .powered-by {
-                font-size: 1em;
-            }
-            .form-container {
-                max-width: 90%; /* Fuller width on mobile */
-            }
-        }
-    </style>
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'dark-bg': '#1a2534',
+                        'form-bg': 'rgba(255, 255, 255, 0.1)',
+                    }
+                }
+            }
         };
     </script>
-    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
-
+    <style>
+        .logo { transition: transform 0.3s ease; }
+        .logo:hover { transform: scale(1.05); }
+        .form-container button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .error-message { color: #f87171; font-size: 0.875rem; margin-top: 0.25rem; }
+        .btn { transition: background-color 0.3s ease, transform 0.2s ease; }
+        .btn:hover { transform: translateY(-2px); }
+        .tab-button { background-color: #2d3748; border-bottom: 2px solid transparent; }
+        .tab-button.active { background-color: #e53e3e; border-bottom: 2px solid #fff; }
+        @media (max-width: 640px) {
+            .logo { max-width: 60%; max-height: 40vh; }
+            .tab-button { font-size: 0.875rem; padding: 0.5rem; }
+        }
+    </style>
 </head>
+<body class="bg-dark-bg text-gray-100 font-sans min-h-screen flex flex-col items-center justify-center p-4">
+    <header class="mb-6 text-center">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Crypto Portfolio Simulator Logo" class="logo mx-auto max-w-[80%] max-h-[60vh]">
+        <p class="text-lg text-gray-300 mt-2">Powered by Hanuman Dynamics©</p>
+        <a href="{{ url_for('donate') }}" class="inline-flex items-center px-6 py-3 bg-red-600 text-white rounded-md hover:bg-red-700 transition btn mt-4" target="_blank" aria-label="Donate to support the project">Donate</a>
+    </header>
 
-<body class="bg-gray-900 text-gray-100 font-sans">
-    <div class="container-logo">
-        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="logo">
-        <p class="powered-by">Powered by Hanuman Dynamics©</p>
-    </div>
-    <a href="{{ url_for('donate') }}" class="inline-flex items-center px-6 py-3 bg-gray-600 text-white rounded-md hover:bg-gray-700" target="_blank">Donate</a>
-    <div class="max-w-2xl mx-auto p-6">
-        <div class="bg-gray-800 rounded-lg shadow-md p-6">
-            <h2 class="text-2xl font-bold text-center text-blue-400 mb-6">Crypto Portfolio Simulator</h2>
-            <form action="/simulate" method="post" id="simulatorForm" onsubmit="return validateForm()">
-                <input type="hidden" name="portfolio_count" id="portfolioCountInput" value="0">
-                <div id="portfoliosContainer">
-                    <!-- Start Date -->
-                    <div class="mb-4">
+    <main class="w-full max-w-2xl">
+        <div class="bg-gray-800 rounded-lg shadow-md p-6 form-container">
+            <h1 class="text-2xl font-bold text-center text-blue-400 mb-6">Crypto Analysis Tools</h1>
+
+            <!-- Tabs -->
+            <div class="flex space-x-2 mb-6 border-b border-gray-600">
+                <button id="portfolio-tab" class="tab-button flex-1 py-2 px-4 rounded-t-md font-semibold active" onclick="showTab('portfolio')">Portfolio Simulator</button>
+                <button id="dca-tab" class="tab-button flex-1 py-2 px-4 rounded-t-md font-semibold" onclick="showTab('dca')">DCA Simulator</button>
+                <button id="cointegration-tab" class="tab-button flex-1 py-2 px-4 rounded-t-md font-semibold" onclick="showTab('cointegration')">Co-integration</button>
+            </div>
+
+            <!-- Portfolio Simulator Tab -->
+            <div id="portfolio-content" class="tab-content">
+                <form action="/simulate" method="post" id="simulatorForm" class="space-y-6" novalidate>
+                    <input type="hidden" name="portfolio_count" id="portfolioCountInput" value="0">
+                    <div>
                         <label for="start-date" class="block text-gray-200 font-semibold mb-2">Start Date</label>
-                        <input type="date" id="start-date" name="start_date" required
-                            class="w-full p-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        <input type="date" id="start-date" name="start_date" required class="w-full p-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
+                        <p id="start-date-error" class="error-message hidden">Please select a valid start date.</p>
                     </div>
-                    <!-- End Date -->
-                    <div class="mb-4">
+                    <div>
                         <label for="end-date" class="block text-gray-200 font-semibold mb-2">End Date</label>
-                        <input type="date" id="end-date" name="end_date" required
-                            class="w-full p-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        <input type="date" id="end-date" name="end_date" required class="w-full p-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
+                        <p id="end-date-error" class="error-message hidden">End date must be after start date.</p>
                     </div>
-                    <!-- Initial Capital -->
-                    <div class="mb-4">
+                    <div>
                         <label for="initial-capital" class="block text-gray-200 font-semibold mb-2">Initial Capital ($)</label>
-                        <input type="number" id="initial-capital" name="initial_capital" value="10000" min="100"
-                            class="w-full p-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        <input type="number" id="initial-capital" name="initial_capital" value="10000" min="100" step="100" class="w-full p-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
+                        <p id="initial-capital-error" class="error-message hidden">Minimum capital is $100.</p>
                     </div>
-                    <!-- ML Model Selection -->
-                    <div class="mb-4">
-                        <!-- Add this within the form in index.html, just before the submit button -->
-                        <div class="form-group">
-                          <label for="ml_model">Select Prediction Model:</label>
-                          <select class="form-control" id="ml_model" name="ml_model">
+                    <div>
+                        <label for="ml_model" class="block text-gray-200 font-semibold mb-2">Prediction Model</label>
+                        <select id="ml_model" name="ml_model" class="w-full p-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
                             <option value="LSTM">LSTM (Long Short-Term Memory)</option>
                             <option value="GRU">GRU (Gated Recurrent Unit)</option>
                             <option value="BiLSTM">Bidirectional LSTM</option>
@@ -137,259 +83,235 @@
                             <option value="CNN-GRU">CNN-GRU Hybrid</option>
                             <option value="Transformer">Transformer</option>
                             <option value="TimeDistributed">TimeDistributed</option>
-                          </select>
-
-                        </div>
+                        </select>
                     </div>
-                </div>
-                <!-- Add Portfolio Button -->
-                <button type="button" id="addPortfolioBtn"
-                    class="w-full py-3 bg-blue-500 text-gray-900 font-semibold rounded-lg hover:bg-blue-600 hover:text-white transition">
-                    Add New Portfolio
-                </button>
-                <!-- Submit All Portfolios -->
-                <button type="submit" id="simulateBtn"
-                    class="w-full py-3 bg-blue-500 text-gray-900 font-semibold rounded-lg hover:bg-blue-600 hover:text-white transition disabled:opacity-50 disabled:cursor-not-allowed mt-6">
-                    Simulate All Portfolios
-                </button>
-            </form>
-        </div>
-    </div>
-    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
-    <script>
-        let portfolioCounter = 0;
-        const cryptoOptions = [{'value': '1INCH', 'text': '1inch (1INCH)'},
-            {'value': 'AAVE', 'text': 'Aave (AAVE)'},
-            {'value': 'ADA', 'text': 'Cardano (ADA)'},
-            {'value': 'AKRO', 'text': 'Akropolis (AKRO)'},
-            {'value': 'ALGO', 'text': 'Algorand (ALGO)'},
-            {'value': 'ALICE', 'text': 'MyNeighborAlice (ALICE)'},
-            {'value': 'ANKR', 'text': 'Ankr (ANKR)'},
-            {'value': 'APE', 'text': 'ApeCoin (APE)'},
-            {'value': 'API3', 'text': 'API3 (API3)'},
-            {'value': 'AR', 'text': 'Arweave (AR)'},
-            {'value': 'ARPA', 'text': 'ARPA Chain (ARPA)'},
-            {'value': 'ATOM', 'text': 'Cosmos (ATOM)'},
-            {'value': 'AUDIO', 'text': 'Audius (AUDIO)'},
-            {'value': 'AVAX', 'text': 'Avalanche (AVAX)'},
-            {'value': 'AXS', 'text': 'Axie Infinity (AXS)'},
-            {'value': 'BADGER', 'text': 'Badger DAO (BADGER)'},
-            {'value': 'BAL', 'text': 'Balancer (BAL)'},
-            {'value': 'BAND', 'text': 'Band Protocol (BAND)'},
-            {'value': 'BAT', 'text': 'Basic Attention Token (BAT)'},
-            {'value': 'BEL', 'text': 'Bella Protocol (BEL)'},
-            {'value': 'BCH', 'text': 'Bitcoin Cash (BCH)'},
-            {'value': 'BLZ', 'text': 'Bluzelle (BLZ)'},
-            {'value': 'BMI', 'text': 'Bridge Mutual (BMI)'},
-            {'value': 'BNB', 'text': 'Binance Coin (BNB)'},
-            {'value': 'BNT', 'text': 'Bancor (BNT)'},
-            {'value': 'BOND', 'text': 'BarnBridge (BOND)'},
-            {'value': 'BTC', 'text': 'Bitcoin (BTC)'},
-            {'value': 'BUSD', 'text': 'Binance USD (BUSD)'},
-            {'value': 'C98', 'text': 'Coin98 (C98)'},
-            {'value': 'CELO', 'text': 'Celo (CELO)'},
-            {'value': 'CELR', 'text': 'Celer Network (CELR)'},
-            {'value': 'CHZ', 'text': 'Chiliz (CHZ)'},
-            {'value': 'COMP', 'text': 'Compound (COMP)'},
-            {'value': 'CRV', 'text': 'Curve DAO Token (CRV)'},
-            {'value': 'CRO', 'text': 'Crypto.com Coin (CRO)'},
-            {'value': 'CTSI', 'text': 'Cartesi (CTSI)'},
-            {'value': 'CVC', 'text': 'Civic (CVC)'},
-            {'value': 'DAG', 'text': 'Constellation (DAG)'},
-            {'value': 'DAI', 'text': 'Dai (DAI)'},
-            {'value': 'DASH', 'text': 'Dash (DASH)'},
-            {'value': 'DCR', 'text': 'Decred (DCR)'},
-            {'value': 'DGB', 'text': 'DigiByte (DGB)'},
-            {'value': 'DEXE', 'text': 'DeXe (DEXE)'},
-            {'value': 'DODO', 'text': 'DODO (DODO)'},
-            {'value': 'DOGE', 'text': 'Dogecoin (DOGE)'},
-            {'value': 'DOT', 'text': 'Polkadot (DOT)'},
-            {'value': 'EASY', 'text': 'EasyFi (EASY)'},
-            {'value': 'ELF', 'text': 'aelf (ELF)'},
-            {'value': 'ENJ', 'text': 'Enjin Coin (ENJ)'},
-            {'value': 'EOS', 'text': 'EOS (EOS)'},
-            {'value': 'ERN', 'text': 'Ethernity Chain (ERN)'},
-            {'value': 'ETC', 'text': 'Ethereum Classic (ETC)'},
-            {'value': 'ETH', 'text': 'Ethereum (ETH)'},
-            {'value': 'FET', 'text': 'Fetch.ai (FET)'},
-            {'value': 'FIL', 'text': 'Filecoin (FIL)'},
-            {'value': 'FRONT', 'text': 'Frontier (FRONT)'},
-            {'value': 'FTM', 'text': 'Fantom (FTM)'},
-            {'value': 'GALA', 'text': 'Gala (GALA)'},
-            {'value': 'GRT', 'text': 'The Graph (GRT)'},
-            {'value': 'HBAR', 'text': 'Hedera Hashgraph (HBAR)'},
-            {'value': 'HNT', 'text': 'Helium (HNT)'},
-            {'value': 'HOT', 'text': 'Holo (HOT)'},
-            {'value': 'ICP', 'text': 'Internet Computer (ICP)'},
-            {'value': 'IDEX', 'text': 'IDEX (IDEX)'},
-            {'value': 'INJ', 'text': 'Injective (INJ)'},
-            {'value': 'IOST', 'text': 'IOST (IOST)'},
-            {'value': 'IOTX', 'text': 'IoTeX (IOTX)'},
-            {'value': 'IRIS', 'text': 'IRISnet (IRIS)'},
-            {'value': 'JST', 'text': 'JUST (JST)'},
-            {'value': 'JUV', 'text': 'Juventus Fan Token (JUV)'},
-            {'value': 'KAVA', 'text': 'Kava.io (KAVA)'},
-            {'value': 'KCS', 'text': 'KuCoin Token (KCS)'},
-            {'value': 'KDA', 'text': 'Kadena (KDA)'},
-            {'value': 'KNC', 'text': 'Kyber Network (KNC)'},
-            {'value': 'KSM', 'text': 'Kusama (KSM)'},
-            {'value': 'LINA', 'text': 'Linear (LINA)'},
-            {'value': 'LINK', 'text': 'Chainlink (LINK)'},
-            {'value': 'LIT', 'text': 'Litentry (LIT)'},
-            {'value': 'LPT', 'text': 'Livepeer (LPT)'},
-            {'value': 'LRC', 'text': 'Loopring (LRC)'},
-            {'value': 'LTC', 'text': 'Litecoin (LTC)'},
-            {'value': 'LUNA', 'text': 'Terra (LUNA)'},
-            {'value': 'MASK', 'text': 'Mask Network (MASK)'},
-            {'value': 'MATIC', 'text': 'Polygon (MATIC)'},
-            {'value': 'MCO', 'text': 'Crypto.com (MCO)'},
-            {'value': 'MKR', 'text': 'Maker (MKR)'},
-            {'value': 'MXC', 'text': 'MXC (MXC)'},
-            {'value': 'NEAR', 'text': 'NEAR Protocol (NEAR)'},
-            {'value': 'NEO', 'text': 'NEO (NEO)'},
-            {'value': 'OMG', 'text': 'OMG Network (OMG)'},
-            {'value': 'UNI', 'text': 'Uniswap (UNI)'},
-            {'value': 'XLM', 'text': 'Stellar (XLM)'},
-            {'value': 'XMR', 'text': 'Monero (XMR)'},
-            {'value': 'XRP', 'text': 'Ripple (XRP)'},
-            {'value': 'XTZ', 'text': 'Tezos (XTZ)'},
-            {'value': 'YFI', 'text': 'yearn.finance (YFI)'},
-            {'value': 'ZEC', 'text': 'Zcash (ZEC)'},
-            {'value': 'ZIL', 'text': 'Zilliqa (ZIL)'},
-            {'value': 'ZRX', 'text': '0x (ZRX)'}];
+                    <div id="portfoliosContainer" class="space-y-6"></div>
+                    <div class="space-y-4">
+                        <button type="button" id="addPortfolioBtn" class="w-full py-3 bg-blue-500 text-gray-900 font-semibold rounded-lg hover:bg-blue-600 hover:text-white transition btn">Add New Portfolio</button>
+                        <button type="submit" id="simulateBtn" class="w-full py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition btn disabled:opacity-50 disabled:cursor-not-allowed">Simulate All Portfolios</button>
+                        <button type="button" id="resetPortfolioBtn" class="w-full py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition btn">Reset Form</button>
+                    </div>
+                </form>
+            </div>
 
-        document.addEventListener('DOMContentLoaded', function() {
+            <!-- DCA Simulator Tab -->
+            <div id="dca-content" class="tab-content hidden">
+                <form action="/dca" method="post" id="dcaForm" class="space-y-6" novalidate>
+                    <div>
+                        <label for="dca-start-date" class="block text-gray-200 font-semibold mb-2">Start Date</label>
+                        <input type="date" id="dca-start-date" name="start_date" required class="w-full p-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
+                        <p id="dca-start-date-error" class="error-message hidden">Please select a valid start date.</p>
+                    </div>
+                    <div>
+                        <label for="dca-capital" class="block text-gray-200 font-semibold mb-2">Total Capital ($)</label>
+                        <input type="number" id="dca-capital" name="capital" value="10000" min="100" step="100" class="w-full p-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
+                        <p id="dca-capital-error" class="error-message hidden">Minimum capital is $100.</p>
+                    </div>
+                    <div>
+                        <label for="dca-frequency" class="block text-gray-200 font-semibold mb-2">Investment Frequency</label>
+                        <select id="dca-frequency" name="frequency" class="w-full p-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
+                            <option value="daily">Daily</option>
+                            <option value="weekly" selected>Weekly</option>
+                            <option value="monthly">Monthly</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-200 font-semibold mb-2">Select Cryptocurrencies</label>
+                        <div id="dca-cryptos-container"></div>
+                        <p id="dca-cryptos-error" class="error-message hidden">Please select at least one cryptocurrency.</p>
+                    </div>
+                    <div>
+                        <label class="block text-gray-200 font-semibold mb-2">Allocation Percentages</label>
+                        <div id="dca-allocation-sliders" class="space-y-2"></div>
+                        <div id="dca-total-allocation" class="text-right mt-2 font-semibold text-gray-200">Total Allocation: 0%</div>
+                    </div>
+                    <button type="submit" id="dcaSimulateBtn" class="w-full py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition btn disabled:opacity-50 disabled:cursor-not-allowed">Simulate DCA</button>
+                </form>
+            </div>
+
+            <!-- Co-integration Tab -->
+            <div id="cointegration-content" class="tab-content hidden">
+                <form action="/cointegration" method="post" id="cointegrationForm" class="space-y-6" novalidate>
+                    <div>
+                        <label class="block text-gray-200 font-semibold mb-2">First Cryptocurrency</label>
+                        <div id="crypto1-container"></div>
+                        <p id="crypto1-error" class="error-message hidden">Please select a cryptocurrency.</p>
+                    </div>
+                    <div>
+                        <label class="block text-gray-200 font-semibold mb-2">Second Cryptocurrency</label>
+                        <div id="crypto2-container"></div>
+                        <p id="crypto2-error" class="error-message hidden">Please select a different cryptocurrency.</p>
+                    </div>
+                    <div>
+                        <label for="coin-start-date" class="block text-gray-200 font-semibold mb-2">Start Date</label>
+                        <input type="date" id="coin-start-date" name="start_date" required class="w-full p-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
+                        <p id="coin-start-date-error" class="error-message hidden">Please select a valid start date.</p>
+                    </div>
+                    <div>
+                        <label for="coin-end-date" class="block text-gray-200 font-semibold mb-2">End Date</label>
+                        <input type="date" id="coin-end-date" name="end_date" required class="w-full p-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
+                        <p id="coin-end-date-error" class="error-message hidden">End date must be after start date.</p>
+                    </div>
+                    <button type="submit" id="cointegrationBtn" class="w-full py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition btn disabled:opacity-50 disabled:cursor-not-allowed">Test Co-integration</button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer class="text-center py-6">
+        <a href="/" class="inline-flex items-center px-6 py-3 bg-red-600 text-white rounded-md hover:bg-red-700 transition btn mr-4" aria-label="Back to Home">Back to Home</a>
+        <a href="{{ url_for('donate') }}" class="inline-flex items-center px-6 py-3 bg-red-600 text-white rounded-md hover:bg-red-700 transition btn" target="_blank" aria-label="Donate to support the project">Donate</a>
+        <p class="text-lg text-gray-300 mt-4">Powered by Hanuman Dynamics©</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js" defer></script>
+    <script>
+        const cryptoOptions = [
+            {'value': '1INCH', 'text': '1inch (1INCH)'}, {'value': 'AAVE', 'text': 'Aave (AAVE)'}, {'value': 'ADA', 'text': 'Cardano (ADA)'},
+            {'value': 'AKRO', 'text': 'Akropolis (AKRO)'}, {'value': 'ALGO', 'text': 'Algorand (ALGO)'}, {'value': 'ALICE', 'text': 'MyNeighborAlice (ALICE)'},
+            {'value': 'ANKR', 'text': 'Ankr (ANKR)'}, {'value': 'APE', 'text': 'ApeCoin (APE)'}, {'value': 'API3', 'text': 'API3 (API3)'},
+            {'value': 'AR', 'text': 'Arweave (AR)'}, {'value': 'ARPA', 'text': 'ARPA Chain (ARPA)'}, {'value': 'ATOM', 'text': 'Cosmos (ATOM)'},
+            {'value': 'AUDIO', 'text': 'Audius (AUDIO)'}, {'value': 'AVAX', 'text': 'Avalanche (AVAX)'}, {'value': 'AXS', 'text': 'Axie Infinity (AXS)'},
+            {'value': 'BADGER', 'text': 'Badger DAO (BADGER)'}, {'value': 'BAL', 'text': 'Balancer (BAL)'}, {'value': 'BAND', 'text': 'Band Protocol (BAND)'},
+            {'value': 'BAT', 'text': 'Basic Attention Token (BAT)'}, {'value': 'BEL', 'text': 'Bella Protocol (BEL)'}, {'value': 'BCH', 'text': 'Bitcoin Cash (BCH)'},
+            {'value': 'BLZ', 'text': 'Bluzelle (BLZ)'}, {'value': 'BMI', 'text': 'Bridge Mutual (BMI)'}, {'value': 'BNB', 'text': 'Binance Coin (BNB)'},
+            {'value': 'BNT', 'text': 'Bancor (BNT)'}, {'value': 'BOND', 'text': 'BarnBridge (BOND)'}, {'value': 'BTC', 'text': 'Bitcoin (BTC)'},
+            {'value': 'BUSD', 'text': 'Binance USD (BUSD)'}, {'value': 'C98', 'text': 'Coin98 (C98)'}, {'value': 'CELO', 'text': 'Celo (CELO)'},
+            {'value': 'CELR', 'text': 'Celer Network (CELR)'}, {'value': 'CHZ', 'text': 'Chiliz (CHZ)'}, {'value': 'COMP', 'text': 'Compound (COMP)'},
+            {'value': 'CRV', 'text': 'Curve DAO Token (CRV)'}, {'value': 'CRO', 'text': 'Crypto.com Coin (CRO)'}, {'value': 'CTSI', 'text': 'Cartesi (CTSI)'},
+            {'value': 'CVC', 'text': 'Civic (CVC)'}, {'value': 'DAG', 'text': 'Constellation (DAG)'}, {'value': 'DAI', 'text': 'Dai (DAI)'},
+            {'value': 'DASH', 'text': 'Dash (DASH)'}, {'value': 'DCR', 'text': 'Decred (DCR)'}, {'value': 'DGB', 'text': 'DigiByte (DGB)'},
+            {'value': 'DEXE', 'text': 'DeXe (DEXE)'}, {'value': 'DODO', 'text': 'DODO (DODO)'}, {'value': 'DOGE', 'text': 'Dogecoin (DOGE)'},
+            {'value': 'DOT', 'text': 'Polkadot (DOT)'}, {'value': 'EASY', 'text': 'EasyFi (EASY)'}, {'value': 'ELF', 'text': 'aelf (ELF)'},
+            {'value': 'ENJ', 'text': 'Enjin Coin (ENJ)'}, {'value': 'EOS', 'text': 'EOS (EOS)'}, {'value': 'ERN', 'text': 'Ethernity Chain (ERN)'},
+            {'value': 'ETC', 'text': 'Ethereum Classic (ETC)'}, {'value': 'ETH', 'text': 'Ethereum (ETH)'}, {'value': 'FET', 'text': 'Fetch.ai (FET)'},
+            {'value': 'FIL', 'text': 'Filecoin (FIL)'}, {'value': 'FRONT', 'text': 'Frontier (FRONT)'}, {'value': 'FTM', 'text': 'Fantom (FTM)'},
+            {'value': 'GALA', 'text': 'Gala (GALA)'}, {'value': 'GRT', 'text': 'The Graph (GRT)'}, {'value': 'HBAR', 'text': 'Hedera Hashgraph (HBAR)'},
+            {'value': 'HNT', 'text': 'Helium (HNT)'}, {'value': 'HOT', 'text': 'Holo (HOT)'}, {'value': 'ICP', 'text': 'Internet Computer (ICP)'},
+            {'value': 'IDEX', 'text': 'IDEX (IDEX)'}, {'value': 'INJ', 'text': 'Injective (INJ)'}, {'value': 'IOST', 'text': 'IOST (IOST)'},
+            {'value': 'IOTX', 'text': 'IoTeX (IOTX)'}, {'value': 'IRIS', 'text': 'IRISnet (IRIS)'}, {'value': 'JST', 'text': 'JUST (JST)'},
+            {'value': 'JUV', 'text': 'Juventus Fan Token (JUV)'}, {'value': 'KAVA', 'text': 'Kava.io (KAVA)'}, {'value': 'KCS', 'text': 'KuCoin Token (KCS)'},
+            {'value': 'KDA', 'text': 'Kadena (KDA)'}, {'value': 'KNC', 'text': 'Kyber Network (KNC)'}, {'value': 'KSM', 'text': 'Kusama (KSM)'},
+            {'value': 'LINA', 'text': 'Linear (LINA)'}, {'value': 'LINK', 'text': 'Chainlink (LINK)'}, {'value': 'LIT', 'text': 'Litentry (LIT)'},
+            {'value': 'LPT', 'text': 'Livepeer (LPT)'}, {'value': 'LRC', 'text': 'Loopring (LRC)'}, {'value': 'LTC', 'text': 'Litecoin (LTC)'},
+            {'value': 'LUNA', 'text': 'Terra (LUNA)'}, {'value': 'MASK', 'text': 'Mask Network (MASK)'}, {'value': 'MATIC', 'text': 'Polygon (MATIC)'},
+            {'value': 'MCO', 'text': 'Crypto.com (MCO)'}, {'value': 'MKR', 'text': 'Maker (MKR)'}, {'value': 'MXC', 'text': 'MXC (MXC)'},
+            {'value': 'NEAR', 'text': 'NEAR Protocol (NEAR)'}, {'value': 'NEO', 'text': 'NEO (NEO)'}, {'value': 'OMG', 'text': 'OMG Network (OMG)'},
+            {'value': 'UNI', 'text': 'Uniswap (UNI)'}, {'value': 'XLM', 'text': 'Stellar (XLM)'}, {'value': 'XMR', 'text': 'Monero (XMR)'},
+            {'value': 'XRP', 'text': 'Ripple (XRP)'}, {'value': 'XTZ', 'text': 'Tezos (XTZ)'}, {'value': 'YFI', 'text': 'yearn.finance (YFI)'},
+            {'value': 'ZEC', 'text': 'Zcash (ZEC)'}, {'value': 'ZIL', 'text': 'Zilliqa (ZIL)'}, {'value': 'ZRX', 'text': '0x (ZRX)'}
+        ];
+
+        let portfolioCounter = 0;
+
+        document.addEventListener('DOMContentLoaded', () => {
             addNewPortfolio();
+            document.getElementById('addPortfolioBtn').addEventListener('click', addNewPortfolio);
+            document.getElementById('resetPortfolioBtn').addEventListener('click', resetPortfolioForm);
+            setupPortfolioValidation();
+            setupDcaForm();
+            setupCointegrationForm();
+            showTab('portfolio');
         });
 
-        document.getElementById('addPortfolioBtn').addEventListener('click', addNewPortfolio);
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`${tabName}-content`).classList.remove('hidden');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            if (tabName === 'portfolio') validatePortfolioForm();
+            else if (tabName === 'dca') validateDcaForm();
+            else if (tabName === 'cointegration') validateCointegrationForm();
+        }
 
         function addNewPortfolio() {
             portfolioCounter++;
-            const portfolioId = 'portfolio_' + (portfolioCounter - 1);
-
+            const portfolioId = `portfolio_${portfolioCounter - 1}`;
             document.getElementById('portfolioCountInput').value = portfolioCounter;
 
             const portfolioContainer = document.createElement('div');
-            portfolioContainer.className = 'bg-gray-700 rounded-lg p-6 mb-6';
+            portfolioContainer.className = 'bg-gray-700 rounded-lg p-6';
             portfolioContainer.id = portfolioId;
 
             const portfolioTitle = document.createElement('h3');
             portfolioTitle.className = 'text-lg font-bold text-gray-200 mb-4 flex justify-between items-center';
             portfolioTitle.innerHTML = `
                 <span>Portfolio ${portfolioCounter}</span>
-                <button type="button"
-                        class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-                        onclick="deletePortfolio('${portfolioId}')">
-                    Delete
-                </button>
+                <button type="button" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition" onclick="deletePortfolio('${portfolioId}')">Delete</button>
             `;
 
-            portfolioContainer.appendChild(portfolioTitle);
-
-            // Cryptocurrency Selector
             const cryptoSelect = document.createElement('select');
             cryptoSelect.name = `crypto_${portfolioCounter - 1}[]`;
             cryptoSelect.id = `${portfolioId}_cryptoSelect`;
-            cryptoSelect.multiple = 'multiple';
+            cryptoSelect.multiple = true;
             cryptoSelect.className = 'w-full p-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400';
-            cryptoSelect.setAttribute('placeholder', 'Start typing...');
-            portfolioContainer.appendChild(cryptoSelect);
+            cryptoSelect.setAttribute('aria-label', `Select cryptocurrencies for Portfolio ${portfolioCounter}`);
 
             cryptoOptions.forEach(option => {
-                const optElement = document.createElement('option');
-                optElement.value = option.value;
-                optElement.textContent = option.text;
-                cryptoSelect.appendChild(optElement);
+                const opt = document.createElement('option');
+                opt.value = option.value;
+                opt.textContent = option.text;
+                cryptoSelect.appendChild(opt);
             });
 
             const allocationsContainer = document.createElement('div');
             allocationsContainer.id = `${portfolioId}_allocationSliders`;
             allocationsContainer.className = 'mt-4 space-y-2';
-            portfolioContainer.appendChild(allocationsContainer);
 
             const totalAllocationDisplay = document.createElement('div');
             totalAllocationDisplay.id = `${portfolioId}_totalAllocation`;
-            totalAllocationDisplay.className = 'text-right mt-2 font-semibold';
+            totalAllocationDisplay.className = 'text-right mt-2 font-semibold text-gray-200';
             totalAllocationDisplay.textContent = 'Total Allocation: 0%';
+
+            portfolioContainer.appendChild(portfolioTitle);
+            portfolioContainer.appendChild(cryptoSelect);
+            portfolioContainer.appendChild(allocationsContainer);
             portfolioContainer.appendChild(totalAllocationDisplay);
 
             document.getElementById('portfoliosContainer').appendChild(portfolioContainer);
 
-            const tomSelectInstance = new TomSelect(`#${portfolioId}_cryptoSelect`, {
+            new TomSelect(`#${portfolioId}_cryptoSelect`, {
                 plugins: ['remove_button'],
                 maxItems: 10,
                 placeholder: 'Start typing...',
                 closeAfterSelect: true,
-                onChange: () => updateAllocations(portfolioId)
+                onChange: () => {
+                    updateAllocations(portfolioId);
+                    validatePortfolioForm();
+                }
             });
 
-            checkAllPortfoliosAllocation(); // Check allocations after adding a new portfolio
+            console.log(`Added portfolio ${portfolioId}`);
+            validatePortfolioForm();
         }
 
         function deletePortfolio(portfolioId) {
             const portfolio = document.getElementById(portfolioId);
             if (portfolio) {
-                // Get the TomSelect instance for this portfolio's crypto selector
-                const selectElement = document.querySelector(`#${portfolioId}_cryptoSelect`);
-                if (selectElement && selectElement.tomselect) {
-                    selectElement.tomselect.destroy(); // Clean up TomSelect instance
-                }
-
+                const select = portfolio.querySelector('select');
+                if (select && select.tomselect) select.tomselect.destroy();
                 portfolio.remove();
                 portfolioCounter--;
                 document.getElementById('portfolioCountInput').value = portfolioCounter;
-
-                // Renumber remaining portfolios
                 const portfolios = document.querySelectorAll('[id^="portfolio_"]');
                 portfolios.forEach((p, index) => {
-                    // Update portfolio container ID
                     p.id = `portfolio_${index}`;
-
-                    // Update portfolio title
-                    const title = p.querySelector('h3');
-                    title.innerHTML = `
-                        <span>Portfolio ${index + 1}</span>
-                        <button type="button"
-                                class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-                                onclick="deletePortfolio('portfolio_${index}')">
-                            Delete
-                        </button>
-                    `;
-
-                    // Update crypto select
+                    p.querySelector('h3 span').textContent = `Portfolio ${index + 1}`;
+                    p.querySelector('h3 button').setAttribute('onclick', `deletePortfolio('portfolio_${index}')`);
                     const cryptoSelect = p.querySelector('select');
-                    if (cryptoSelect) {
-                        cryptoSelect.name = `crypto_${index}[]`;
-                        cryptoSelect.id = `portfolio_${index}_cryptoSelect`;
-                    }
-
-                    // Update allocation sliders
+                    cryptoSelect.name = `crypto_${index}[]`;
+                    cryptoSelect.id = `portfolio_${index}_cryptoSelect`;
                     const sliders = p.querySelectorAll('input[type="range"]');
                     sliders.forEach(slider => {
                         const crypto = slider.name.split('allocation_')[1];
                         slider.name = `portfolio_${index}_allocation_${crypto}`;
                     });
-
-                    // Update allocation container ID
-                    const allocationContainer = p.querySelector('[id$="_allocationSliders"]');
-                    if (allocationContainer) {
-                        allocationContainer.id = `portfolio_${index}_allocationSliders`;
-                    }
-
-                    // Update total allocation display ID
-                    const totalAllocation = p.querySelector('[id$="_totalAllocation"]');
-                    if (totalAllocation) {
-                        totalAllocation.id = `portfolio_${index}_totalAllocation`;
-                    }
+                    p.querySelector('[id$="_allocationSliders"]').id = `portfolio_${index}_allocationSliders`;
+                    p.querySelector('[id$="_totalAllocation"]').id = `portfolio_${index}_totalAllocation`;
                 });
-
-                // If no portfolios left, add a new empty one
-                if (portfolioCounter === 0) {
-                    addNewPortfolio();
-                }
-
-                checkAllPortfoliosAllocation(); // Recheck allocations after deletion
+                if (portfolioCounter === 0) addNewPortfolio();
+                console.log(`Deleted portfolio ${portfolioId}, remaining: ${portfolioCounter}`);
+                validatePortfolioForm();
             }
         }
 
@@ -398,165 +320,374 @@
             const selectedCryptos = select.items;
             const slidersContainer = document.getElementById(`${portfolioId}_allocationSliders`);
             slidersContainer.innerHTML = '';
-
-            const defaultAllocation = Math.floor(100 / selectedCryptos.length);
+            const defaultAllocation = selectedCryptos.length ? Math.floor(100 / selectedCryptos.length) : 0;
 
             selectedCryptos.forEach(crypto => {
                 const container = document.createElement('div');
-                container.className = 'flex items-center justify-between bg-gray-600 rounded-lg p-2 mb-2';
-
+                container.className = 'flex items-center justify-between bg-gray-600 rounded-lg p-2';
                 const label = document.createElement('div');
-                label.className = 'font-semibold text-gray-200';
+                label.className = 'font-semibold text-gray-200 w-1/3';
                 const cryptoOption = cryptoOptions.find(opt => opt.value === crypto);
                 label.textContent = cryptoOption ? cryptoOption.text : crypto;
-
                 const slider = document.createElement('input');
                 slider.type = 'range';
-                slider.min = 0;
-                slider.max = 100;
-                slider.value = defaultAllocation;
-                slider.className = 'w-full mx-4 bg-gray-500';
+                slider.min = '0';
+                slider.max = '100';
+                slider.value = defaultAllocation.toString();
+                slider.className = 'w-1/2 mx-2';
                 slider.name = `portfolio_${portfolioId.split('_')[1]}_allocation_${crypto}`;
-
+                slider.setAttribute('aria-label', `Allocation for ${cryptoOption ? cryptoOption.text : crypto}`);
                 const value = document.createElement('div');
-                value.className = 'text-gray-200 font-medium min-w-[4rem] text-right';
-                value.textContent = slider.value + '%';
-
-                slider.addEventListener('input', function() {
-                    value.textContent = this.value + '%';
+                value.className = 'text-gray-200 font-medium w-1/6 text-right';
+                value.textContent = `${slider.value}%`;
+                slider.addEventListener('input', () => {
+                    value.textContent = `${slider.value}%`;
                     calculateTotalAllocation(portfolioId);
+                    validatePortfolioForm();
                 });
-
                 container.appendChild(label);
                 container.appendChild(slider);
                 container.appendChild(value);
                 slidersContainer.appendChild(container);
             });
-
             calculateTotalAllocation(portfolioId);
+            console.log(`Updated allocations for ${portfolioId}, selected: ${selectedCryptos}`);
         }
 
         function calculateTotalAllocation(portfolioId) {
             const sliders = document.querySelectorAll(`#${portfolioId}_allocationSliders input[type="range"]`);
-            const totalAllocation = Array.from(sliders)
-                .reduce((sum, slider) => sum + parseInt(slider.value), 0);
-
-            const totalAllocationDisplay = document.getElementById(`${portfolioId}_totalAllocation`);
-            totalAllocationDisplay.textContent = `Total Allocation: ${totalAllocation}%`;
-
-            if (totalAllocation !== 100) {
-                totalAllocationDisplay.style.color = 'red';
+            const total = Array.from(sliders).reduce((sum, slider) => sum + parseInt(slider.value || 0), 0);
+            const display = document.getElementById(`${portfolioId}_totalAllocation`);
+            if (display) {
+                display.textContent = `Total Allocation: ${total}%`;
+                display.style.color = total === 100 ? '#10B981' : '#f87171';
+                console.log(`Calculated total for ${portfolioId}: ${total}`);
             } else {
-                totalAllocationDisplay.style.color = '#10B981'; // Green color for valid allocation
+                console.error(`Total allocation display not found for ${portfolioId}`);
             }
-
-            checkAllPortfoliosAllocation(); // Check all portfolios after any change
         }
 
-
-        function checkAllPortfoliosAllocation() {
-            const portfolios = document.querySelectorAll('[id^="portfolio_"]');
-            let allValid = portfolios.length > 0; // At least one portfolio must exist
-
-            // Check each portfolio's allocation
-            portfolios.forEach(portfolio => {
-                const portfolioId = portfolio.id;
-                const totalAllocationDisplay = document.getElementById(`${portfolioId}_totalAllocation`);
-
-                if (totalAllocationDisplay) {
-                    const totalAllocation = parseInt(totalAllocationDisplay.textContent.match(/\d+/)[0]);
-                    if (totalAllocation !== 100) {
-                        allValid = false;
-                    }
+        function setupPortfolioValidation() {
+            const inputs = ['start-date', 'end-date', 'initial-capital', 'ml_model'];
+            inputs.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) element.addEventListener('input', () => {
+                    console.log(`Input changed: ${id}=${element.value}`);
+                    validatePortfolioForm();
+                });
+            });
+            document.getElementById('simulatorForm').addEventListener('submit', e => {
+                if (!validatePortfolioForm()) {
+                    e.preventDefault();
+                    console.log('Form submission prevented due to invalid inputs');
+                    document.getElementById('simulateBtn').textContent = 'Fix Errors to Simulate';
                 } else {
-                    allValid = false; // If no allocations, it's not valid
+                    document.getElementById('simulateBtn').textContent = 'Simulating...';
+                    document.getElementById('simulateBtn').disabled = true;
                 }
             });
-
-            return allValid;
+            validatePortfolioForm();
         }
 
-       function validateForm() {
-            const submitBtn = document.getElementById('simulateBtn');
+        function validatePortfolioForm() {
             const startDate = document.getElementById('start-date').value;
             const endDate = document.getElementById('end-date').value;
-            const initialCapital = document.getElementById('initial-capital').value;
+            const capital = document.getElementById('capital').value;
+            const cryptos = document.getElementById('cryptos').tomselect.items;
+            const totalAllocation = parseInt(document.getElementById('total-allocation').textContent.match(/\d+/)[0]);
+            const submitBtn = document.getElementById('portfolioSimulateBtn');
 
-            // Check if basic required fields are filled
-            if (!startDate || !endDate || !initialCapital) {
-                submitBtn.disabled = true;
-                submitBtn.textContent = 'Please Fill All Required Fields';
-                return false;
+            let isValid = true;
+            ['start-date-error', 'end-date-error', 'capital-error', 'cryptos-error'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+
+            if (!startDate) {
+                document.getElementById('start-date-error').classList.remove('hidden');
+                isValid = false;
+            }
+            if (!endDate || (startDate && endDate <= startDate)) {
+                document.getElementById('end-date-error').classList.remove('hidden');
+                isValid = false;
+            }
+            if (!capital || capital < 100) {
+                document.getElementById('capital-error').classList.remove('hidden');
+                isValid = false;
+            }
+            if (cryptos.length === 0) {
+                document.getElementById('cryptos-error').classList.remove('hidden');
+                isValid = false;
+            }
+            if (totalAllocation !== 100) {
+                isValid = false;
             }
 
-            // Validate dates
-            const start = new Date(startDate);
-            const end = new Date(endDate);
-            if (start >= end) {
-                submitBtn.disabled = true;
-                submitBtn.textContent = 'End Date Must Be After Start Date';
-                return false;
-            }
+            submitBtn.disabled = !isValid;
+            submitBtn.textContent = isValid ? 'Simulate Portfolio' : 'Fix Errors to Simulate';
+            return isValid;
+        }
 
-            // Validate initial capital
-            if (initialCapital < 100) {
-                submitBtn.disabled = true;
-                submitBtn.textContent = 'Initial Capital Must Be At Least $100';
-                return false;
-            }
-
-            // Get all portfolios
+        function resetPortfolioForm() {
+            const form = document.getElementById('simulatorForm');
+            form.reset();
+            document.getElementById('initial-capital').value = '10000';
             const portfolios = document.querySelectorAll('[id^="portfolio_"]');
+            portfolios.forEach(p => {
+                const select = p.querySelector('select');
+                if (select && select.tomselect) select.tomselect.destroy();
+                p.remove();
+            });
+            portfolioCounter = 0;
+            addNewPortfolio();
+            console.log('Form reset');
+            validatePortfolioForm();
+        }
 
-            // Check if there's at least one portfolio
-            if (portfolios.length === 0) {
-                submitBtn.disabled = true;
-                submitBtn.textContent = 'Add At Least One Portfolio';
-                return false;
-            }
+        function setupDcaForm() {
+            const container = document.getElementById('dca-cryptos-container');
+            const cryptoSelect = document.createElement('select');
+            cryptoSelect.name = 'cryptos[]';
+            cryptoSelect.id = 'dca-cryptos';
+            cryptoSelect.multiple = true;
+            cryptoSelect.className = 'w-full p-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400';
+            cryptoSelect.setAttribute('aria-label', 'Select cryptocurrencies for DCA');
 
-            // Check each portfolio's allocation
-            let validPortfoliosCount = 0;
-            portfolios.forEach(portfolio => {
-                const portfolioId = portfolio.id;
-                const totalAllocationDisplay = document.getElementById(`${portfolioId}_totalAllocation`);
-                const cryptoSelect = portfolio.querySelector('select');
+            cryptoOptions.forEach(option => {
+                const opt = document.createElement('option');
+                opt.value = option.value;
+                opt.textContent = option.text;
+                cryptoSelect.appendChild(opt);
+            });
 
-                // Check if portfolio has cryptos selected and 100% allocation
-                if (totalAllocationDisplay &&
-                    cryptoSelect &&
-                    cryptoSelect.tomselect.items.length > 0) {
-                    const totalAllocation = parseInt(totalAllocationDisplay.textContent.match(/\d+/)[0]);
-                    if (totalAllocation === 100) {
-                        validPortfoliosCount++;
-                    }
+            container.appendChild(cryptoSelect);
+
+            new TomSelect('#dca-cryptos', {
+                plugins: ['remove_button'],
+                maxItems: 10,
+                placeholder: 'Start typing...',
+                closeAfterSelect: true,
+                onInitialize: function() {
+                    console.log('DCA Crypto Selector Initialized');
+                },
+                onChange: () => {
+                    updateDcaAllocations();
+                    validateDcaForm();
                 }
             });
 
-            // If at least one portfolio is valid (has 100% allocation), enable submission
-            if (validPortfoliosCount = portfolios.length) {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Simulate All Portfolios';
-                return true;
-            } else {
-                submitBtn.disabled = true;
-                submitBtn.textContent = 'All Portfolios Must Have 100% Allocation';
-                return false;
-            }
+            document.getElementById('dcaForm').addEventListener('submit', e => {
+                if (!validateDcaForm()) {
+                    e.preventDefault();
+                    document.getElementById('dcaSimulateBtn').textContent = 'Fix Errors to Simulate';
+                } else {
+                    document.getElementById('dcaSimulateBtn').textContent = 'Simulating...';
+                    document.getElementById('dcaSimulateBtn').disabled = true;
+                }
+            });
+
+            ['dca-start-date', 'dca-capital', 'dca-frequency'].forEach(id => {
+                document.getElementById(id).addEventListener('input', validateDcaForm);
+            });
+
+            validateDcaForm();
         }
 
-        // Add event listeners to trigger validation
-        document.getElementById('start-date').addEventListener('change', validateForm);
-        document.getElementById('end-date').addEventListener('change', validateForm);
-        document.getElementById('initial-capital').addEventListener('input', validateForm);
-        document.getElementById('ml-model').addEventListener('change', validateForm);
-        document.getElementById('simulatorForm').addEventListener('submit', function(e) {
-            if (!validateForm()) {
-                e.preventDefault();
-            }
-        });
+        function updateDcaAllocations() {
+            const select = document.getElementById('dca-cryptos').tomselect;
+            const selectedCryptos = select.items;
+            const slidersContainer = document.getElementById('dca-allocation-sliders');
+            slidersContainer.innerHTML = '';
+            const defaultAllocation = selectedCryptos.length ? Math.floor(100 / selectedCryptos.length) : 0;
 
+            selectedCryptos.forEach(crypto => {
+                const container = document.createElement('div');
+                container.className = 'flex items-center justify-between bg-gray-600 rounded-lg p-2';
+                const label = document.createElement('div');
+                label.className = 'font-semibold text-gray-200 w-1/3';
+                const cryptoOption = cryptoOptions.find(opt => opt.value === crypto);
+                label.textContent = cryptoOption ? cryptoOption.text : crypto;
+                const slider = document.createElement('input');
+                slider.type = 'range';
+                slider.min = '0';
+                slider.max = '100';
+                slider.value = defaultAllocation.toString();
+                slider.className = 'w-1/2 mx-2';
+                slider.name = `allocation_${crypto}`;
+                slider.setAttribute('aria-label', `Allocation for ${cryptoOption ? cryptoOption.text : crypto}`);
+                const value = document.createElement('div');
+                value.className = 'text-gray-200 font-medium w-1/6 text-right';
+                value.textContent = `${slider.value}%`;
+                slider.addEventListener('input', () => {
+                    value.textContent = `${slider.value}%`;
+                    calculateDcaTotalAllocation();
+                    validateDcaForm();
+                });
+                container.appendChild(label);
+                container.appendChild(slider);
+                container.appendChild(value);
+                slidersContainer.appendChild(container);
+            });
+            calculateDcaTotalAllocation();
+        }
+
+        function calculateDcaTotalAllocation() {
+            const sliders = document.querySelectorAll('#dca-allocation-sliders input[type="range"]');
+            const total = Array.from(sliders).reduce((sum, slider) => sum + parseInt(slider.value || 0), 0);
+            const display = document.getElementById('dca-total-allocation');
+            display.textContent = `Total Allocation: ${total}%`;
+            display.style.color = total === 100 ? '#10B981' : '#f87171';
+        }
+
+        function validateDcaForm() {
+            const startDate = document.getElementById('dca-start-date').value;
+            const capital = document.getElementById('dca-capital').value;
+            const cryptos = document.getElementById('dca-cryptos').tomselect.items;
+            const totalAllocation = parseInt(document.getElementById('dca-total-allocation').textContent.match(/\d+/)[0]);
+            const submitBtn = document.getElementById('dcaSimulateBtn');
+
+            let isValid = true;
+            ['dca-start-date-error', 'dca-capital-error', 'dca-cryptos-error'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+
+            if (!startDate) {
+                document.getElementById('dca-start-date-error').classList.remove('hidden');
+                isValid = false;
+            }
+            if (!capital || capital < 100) {
+                document.getElementById('dca-capital-error').classList.remove('hidden');
+                isValid = false;
+            }
+            if (cryptos.length === 0) {
+                document.getElementById('dca-cryptos-error').classList.remove('hidden');
+                isValid = false;
+            }
+            if (totalAllocation !== 100) {
+                isValid = false;
+            }
+
+            submitBtn.disabled = !isValid;
+            submitBtn.textContent = isValid ? 'Simulate DCA' : 'Fix Errors to Simulate';
+            return isValid;
+        }
+
+        function setupCointegrationForm() {
+            // First Crypto Selector
+            const crypto1Container = document.getElementById('crypto1-container');
+            const crypto1Select = document.createElement('select');
+            crypto1Select.name = 'crypto1';
+            crypto1Select.id = 'crypto1';
+            crypto1Select.className = 'w-full p-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400';
+            crypto1Select.setAttribute('aria-label', 'Select first cryptocurrency');
+            crypto1Select.required = true;
+
+            cryptoOptions.forEach(option => {
+                const opt = document.createElement('option');
+                opt.value = option.value;
+                opt.textContent = option.text;
+                crypto1Select.appendChild(opt);
+            });
+
+            crypto1Container.appendChild(crypto1Select);
+
+            new TomSelect('#crypto1', {
+                options: cryptoOptions,
+                maxItems: 1,
+                placeholder: 'Select first crypto...',
+                closeAfterSelect: true,
+                onInitialize: function() {
+                    console.log('Conintegration Crypto Selector Initialized');
+                },
+                onChange: () => {
+                    validateCointegrationForm();
+                }
+            });
+
+            // Second Crypto Selector
+            const crypto2Container = document.getElementById('crypto2-container');
+            const crypto2Select = document.createElement('select');
+            crypto2Select.name = 'crypto2';
+            crypto2Select.id = 'crypto2';
+            crypto2Select.className = 'w-full p-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400';
+            crypto2Select.setAttribute('aria-label', 'Select second cryptocurrency');
+            crypto2Select.required = true;
+
+            cryptoOptions.forEach(option => {
+                const opt = document.createElement('option');
+                opt.value = option.value;
+                opt.textContent = option.text;
+                crypto2Select.appendChild(opt);
+            });
+
+            crypto2Container.appendChild(crypto2Select);
+
+            new TomSelect('#crypto2', {
+                options: cryptoOptions,
+                maxItems: 1,
+                placeholder: 'Select second crypto...',
+                closeAfterSelect: true,onInitialize: function() {
+                    console.log('Conintegration Crypto Selector Initialized');
+                },
+                onChange: () => {
+                    validateCointegrationForm();
+                }
+            });
+
+            document.getElementById('cointegrationForm').addEventListener('submit', e => {
+                if (!validateCointegrationForm()) {
+                    e.preventDefault();
+                    document.getElementById('cointegrationBtn').textContent = 'Fix Errors to Test';
+                } else {
+                    document.getElementById('cointegrationBtn').textContent = 'Testing...';
+                    document.getElementById('cointegrationBtn').disabled = true;
+                }
+            });
+
+            ['coin-start-date', 'coin-end-date'].forEach(id => {
+                document.getElementById(id)?.addEventListener('input', validateCointegrationForm);
+            });
+        }
+
+        function validateCointegrationForm() {
+            const crypto1 = document.getElementById('crypto1').value;
+            const crypto2 = document.getElementById('crypto2').value;
+            const startDate = document.getElementById('coin-start-date').value;
+            const endDate = document.getElementById('coin-end-date').value;
+            const crypto1Error = document.getElementById('crypto1-error');
+            const crypto2Error = document.getElementById('crypto2-error');
+            const startError = document.getElementById('coin-start-date-error');
+            const endError = document.getElementById('coin-end-date-error');
+            let isValid = true;
+
+            crypto1Error.classList.add('hidden');
+            crypto2Error.classList.add('hidden');
+            startError.classList.add('hidden');
+            endError.classList.add('hidden');
+
+            if (!crypto1) { crypto1Error.classList.remove('hidden'); isValid = false; }
+            if (!crypto2) { crypto2Error.classList.remove('hidden'); isValid = false; }
+            else if (crypto1 === crypto2) {
+                crypto2Error.textContent = 'Please select a different cryptocurrency.';
+                crypto2Error.classList.remove('hidden');
+                isValid = false;
+            }
+            if (!startDate) { startError.classList.remove('hidden'); isValid = false; }
+            if (!endDate) { endError.classList.remove('hidden'); isValid = false; }
+            else {
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+                if (start >= end) {
+                    endError.textContent = 'End date must be after start date.';
+                    endError.classList.remove('hidden');
+                    isValid = false;
+                }
+            }
+
+            const submitBtn = document.getElementById('cointegrationBtn');
+            submitBtn.disabled = !isValid;
+            submitBtn.textContent = isValid ? 'Test Co-integration' : 'Fix Errors to Test';
+            return isValid;
+        }
     </script>
 </body>
-
 </html>
