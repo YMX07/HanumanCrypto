@@ -335,7 +335,7 @@
 
         if (TASK_IDS.length > 0 && !{{ all_completed|lower }}) {
             // Start automatic updates
-            updateInterval = setInterval(() => updateTaskStatus(false), 10000);
+            updateInterval = setInterval(() => updateTaskStatus(false), 20000);
             updateTaskStatus(false); // Initial call
 
             // Attach event listener for manual refresh
