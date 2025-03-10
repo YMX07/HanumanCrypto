@@ -44,10 +44,11 @@ app.jinja_env.filters['zip'] = zip
 app.jinja_env.filters['datetimeformat'] = datetimeformat
 
 # Use Render's PORT environment variable
-port = int(os.environ.get('PORT', 5000))
+port = int(os.environ.get('PORT', 10000))
 
 # Get Redis URL from environment variable or use default
 redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+r = redis.Redis.from_url(redis_url)
 
 # Set up Redis connection without SSL
 try:
