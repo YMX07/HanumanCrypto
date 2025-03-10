@@ -3,23 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Error</title>
+    <meta name="description" content="An error occurred while using the Crypto Portfolio Simulator.">
+    <title>Error - Crypto Portfolio Simulator</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'dark-bg': '#1a2534',
+                        'primary': {"50":"#eff6ff","100":"#dbeafe","200":"#bfdbfe","300":"#93c5fd","400":"#60a5fa","500":"#3b82f6","600":"#2563eb","700":"#1d4ed8","800":"#1e40af","900":"#1e3a8a","950":"#172554"}
+                    }
+                }
+            }
+        };
+    </script>
+    <style>
+        .logo {
+            max-width: 20%;
+            max-height: 15vh;
+            width: auto;
+            height: auto;
+            transition: transform 0.3s ease;
+        }
+        .logo:hover {
+            transform: scale(1.2);
+        }
+        .btn {
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        @media (max-width: 640px) {
+            .logo {
+                max-width: 60%;
+                max-height: 40vh;
+            }
+        }
+    </style>
 </head>
-<body class="bg-gray-100 min-h-screen">
-    <div class="container mx-auto px-4 py-8">
-        <h1 class="text-3xl font-bold text-red-600 text-center">An Error Occurred</h1>
-        <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mt-4" role="alert">
-            <p class="font-bold">Error Details:</p>
-            <p>{{ error }}</p>
-        </div>
-        <div class="text-center mt-4">
-            <a href="/" class="inline-flex items-center px-6 py-3 bg-gray-600 text-white rounded-md hover:bg-gray-700">
-                Back to Home
-            </a>
-            <a href="{{ url_for('donate') }}" class="inline-flex items-center px-6 py-3 bg-gray-600 text-white rounded-md hover:bg-gray-700" target="_blank">Donate</a>
-        </div>
-    </div>
+<body class="bg-dark-bg text-gray-100 font-sans min-h-screen flex flex-col">
+    <header class="text-center py-6">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Crypto Portfolio Simulator Logo" class="logo mx-auto">
+        <p class="text-lg text-white mt-2">Powered by Hanuman Dynamics©</p>
+    </header>
 
+    <main class="container mx-auto px-4 py-8 flex-grow flex items-center justify-center">
+        <div class="bg-gray-800 rounded-lg shadow-md p-6 max-w-lg w-full">
+            <h1 class="text-3xl font-bold text-red-400 text-center mb-4">An Error Occurred</h1>
+            <div class="bg-red-900 border-l-4 border-red-500 text-red-100 p-4 mb-6" role="alert">
+                <p class="font-bold">Error Details:</p>
+                <p>{{ error }}</p>
+            </div>
+            <div class="text-center space-x-4">
+                <a href="/" class="btn inline-flex items-center px-6 py-3 bg-red-600 text-white rounded-md hover:bg-red-700" aria-label="Return to the home page">
+                    Back to Home
+                </a>
+                <a href="{{ url_for('donate') }}" class="btn inline-flex items-center px-6 py-3 bg-red-600 text-white rounded-md hover:bg-red-700" target="_blank" aria-label="Donate to support the project">
+                    Donate
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <footer class="text-center py-6 text-white">
+        <p>Powered by Hanuman Dynamics©</p>
+    </footer>
 </body>
 </html>

@@ -1,10 +1,289 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="View your cryptocurrency portfolio simulation results with detailed charts and metrics.">
+    <title>Portfolio Simulation Results</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'dark-bg': '#1a2534',
+                        'primary': {"50":"#eff6ff","100":"#dbeafe","200":"#bfdbfe","300":"#93c5fd","400":"#60a5fa","500":"#3b82f6","600":"#2563eb","700":"#1d4ed8","800":"#1e40af","900":"#1e3a8a","950":"#172554"}
+                    }
+                }
+            }
+        };
+    </script>
+    <style>
+        .logo {
+            max-width: 20%;
+            max-height: 15vh;
+            width: auto;
+            height: auto;
+            transition: transform 0.3s ease;
+        }
+        .logo:hover {
+            transform: scale(1.10);
+        }
+        .chart-container {
+            max-height: 16rem;
+            overflow: hidden;
+        }
+        @media (max-width: 640px) {
+            .logo {
+                max-width: 60%;
+                max-height: 40vh;
+            }
+            .chart-container {
+                max-height: 12rem;
+            }
+        }
+    </style>
 </head>
-<body>
+<body class="bg-dark-bg text-gray-100 font-sans min-h-screen flex flex-col">
+    <header class="text-center py-6">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Crypto Portfolio Simulator Logo" class="logo mx-auto">
+        <p class="text-lg text-white mt-2">Powered by Hanuman Dynamics©</p>
+    </header>
 
+    <main class="container mx-auto px-4 py-8 flex-grow">
+        <section class="bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+            <h1 class="text-3xl font-bold text-center mb-4">Portfolio Simulation Results</h1>
+            {% if portfolios|length > 1 %}
+                <p class="text-center text-gray-300 mb-4">Comparing {{ portfolios|length }} Portfolios</p>
+            {% endif %}
+            <div class="text-center text-gray-400">
+                <p>Start Date: {{ start_date }}</p>
+                <p>End Date: {{ end_date }}</p>
+                <p>Prediction Model: {{ ml_model }}</p>
+            </div>
+        </section>
+
+        {% if error %}
+            <div class="bg-red-900 border-l-4 border-red-500 text-red-100 p-4 mb-8" role="alert">
+                <p class="font-bold">Error</p>
+                <p>{{ error }}</p>
+            </div>
+        {% endif %}
+
+        {% if portfolios|length > 1 %}
+            <nav class="flex flex-wrap gap-2 justify-center mb-8" aria-label="Portfolio Navigation">
+                {% for i in range(portfolios|length) %}
+                    <a href="#portfolio-{{ loop.index }}"
+                       class="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors">
+                        Portfolio {{ loop.index }}
+                    </a>
+                {% endfor %}
+            </nav>
+        {% endif %}
+
+        <section class="bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-2xl font-semibold mb-4">Portfolio Comparison</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-700">
+                    <thead class="bg-gray-700">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Metric</th>
+                            {% for i in range(portfolios|length) %}
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                                    Portfolio {{ loop.index }}
+                                </th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-700">
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">Initial Investment</td>
+                            {% for portfolio in portfolios %}
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${{ portfolio.initial_capital }}</td>
+                            {% endfor %}
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">Final Value</td>
+                            {% for portfolio in portfolios %}
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${{ portfolio.final_value }}</td>
+                            {% endfor %}
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">Total Return</td>
+                            {% for portfolio in portfolios %}
+                                <td class="px-6 py-4 whitespace-nowrap text-sm {% if portfolio.performance|float > 0 %}text-green-400{% else %}text-red-400{% endif %}">
+                                    {{ portfolio.performance }}%
+                                </td>
+                            {% endfor %}
+                        </tr>
+                        {% for metric in portfolios[0].financial_metrics.keys() %}
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">{{ metric }}</td>
+                                {% for portfolio in portfolios %}
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                                        {{ portfolio.financial_metrics[metric] }}
+                                    </td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        {% if portfolio_correlation is not none and portfolios|length > 1 %}
+            <section class="bg-gray-800 rounded-lg shadow-md p-4 mb-8">
+                <h2 class="text-base font-semibold mb-2">Portfolio Correlation Heatmap</h2>
+                <div class="chart-container text-center">
+                    <!-- Note: Assuming heatmap_filename is now an HTML file from your updated app -->
+                    <iframe src="{{ url_for('static', filename=heatmap_filename) }}"
+                            class="w-full h-full border-0"
+                            title="Portfolio Correlation Heatmap"></iframe>
+                </div>
+            </section>
+        {% endif %}
+
+        {% for portfolio in portfolios %}
+            <section class="bg-gray-800 rounded-lg shadow-md p-6 mb-8" id="portfolio-{{ loop.index }}">
+                <h2 class="text-2xl font-semibold mb-6">Portfolio {{ loop.index }} Details</h2>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold mb-4">Portfolio Performance</h3>
+                        <div class="chart-container relative">
+                            <!-- Note: Assuming portfolio_image is now an HTML file; adjust if still PNG -->
+                            <iframe src="{{ url_for('static', filename=portfolio.interactive_portfolio) }}"
+                                    class="w-full h-full border-0"
+                                    title="Portfolio Performance"></iframe>
+                        </div>
+                        <div class="mt-4 text-center">
+                            <a href="{{ url_for('static', filename=portfolio.interactive_portfolio) }}"
+                               class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                               target="_blank">
+                                View Interactive Chart
+                            </a>
+                        </div>
+                    </div>
+                    <div class="bg-gray-700 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold mb-4">Individual Holdings</h3>
+                    <div class="chart-container relative">
+                        {% if portfolio.individual_image and portfolio.individual_image|length > 0 %}
+                            <img src="{{ url_for('static', filename=portfolio.individual_image) }}"
+                                 alt="Individual Holdings"
+                                 class="w-full h-full object-contain"
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                            <div style="display: none;">
+                                {% if portfolio.individual_interactive and portfolio.individual_interactive|length > 0 %}
+                                    <iframe src="{{ url_for('static', filename=portfolio.individual_interactive) }}"
+                                            class="w-full h-full border-0"
+                                            title="Individual Holdings"></iframe>
+                                {% else %}
+                                    <p class="text-red-400 text-center">Individual Holdings chart unavailable.</p>
+                                {% endif %}
+                            </div>
+                        {% elif portfolio.individual_interactive and portfolio.individual_interactive|length > 0 %}
+                            <iframe src="{{ url_for('static', filename=portfolio.individual_interactive) }}"
+                                    class="w-full h-full border-0"
+                                    title="Individual Holdings"></iframe>
+                        {% else %}
+                            <p class="text-red-400 text-center">Individual Holdings chart unavailable.</p>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="bg-gray-700 rounded-lg p-4 md:col-span-2">
+                    <h3 class="text-lg font-semibold mb-4">Asset Correlation Matrix</h3>
+                    <div class="chart-container relative">
+                        {% if portfolio.correlation_matrix_image and portfolio.correlation_matrix_image|length > 0 %}
+                            <img src="{{ url_for('static', filename=portfolio.correlation_matrix_image) }}"
+                                 alt="Correlation Matrix"
+                                 class="w-full h-full object-contain"
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                            <div style="display: none;">
+                                {% if portfolio.correlation_matrix_interactive and portfolio.correlation_matrix_interactive|length > 0 %}
+                                    <iframe src="{{ url_for('static', filename=portfolio.correlation_matrix_interactive) }}"
+                                            class="w-full h-full border-0"
+                                            title="Correlation Matrix"></iframe>
+                                {% else %}
+                                    <p class="text-red-400 text-center">Correlation Matrix unavailable.</p>
+                                {% endif %}
+                            </div>
+                        {% elif portfolio.correlation_matrix_interactive and portfolio.correlation_matrix_interactive|length > 0 %}
+                            <iframe src="{{ url_for('static', filename=portfolio.correlation_matrix_interactive) }}"
+                                    class="w-full h-full border-0"
+                                    title="Correlation Matrix"></iframe>
+                        {% else %}
+                            <p class="text-red-400 text-center">Correlation Matrix unavailable.</p>
+                        {% endif %}
+                    </div>
+                </div>
+                    </div>
+                    <div class="bg-gray-700 rounded-lg p-4 md:col-span-2">
+                        <h3 class="text-lg font-semibold mb-4">Return Distribution Analysis</h3>
+                        <div class="chart-container relative">
+                            <iframe src="{{ url_for('static', filename=portfolio.interactive_distribution) }}"
+                                    class="w-full h-full border-0"
+                                    title="Return Distribution Analysis"></iframe>
+                        </div>
+                    </div>
+                    <div class="bg-gray-700 rounded-lg p-4 md:col-span-2">
+                        <h3 class="text-lg font-semibold mb-4">Monte Carlo Simulation (252-day Projection)</h3>
+                        {% if portfolio.monte_carlo_chart %}
+                            <div class="mt-4 text-center">
+                                <a href="{{ url_for('static', filename=portfolio.monte_carlo_chart) }}"
+                                   class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                                   target="_blank">
+                                    View Interactive Monte Carlo Chart
+                                </a>
+                            </div>
+                        {% else %}
+                            <p class="text-red-400 text-center">Monte Carlo simulation unavailable due to insufficient data.</p>
+                        {% endif %}
+                    </div>
+                    <div class="bg-gray-700 rounded-lg p-4 md:col-span-2">
+                        <h3 class="text-lg font-semibold mb-4">{{ ml_model|upper }} Price Predictions (252-day Projection)</h3>
+                        {% if portfolio.prediction_chart %}
+                            <div class="mt-4 text-center">
+                                <a href="{{ url_for('static', filename=portfolio.prediction_chart) }}"
+                                   class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                                   target="_blank">
+                                    View Interactive {{ ml_model|upper }} Prediction Chart
+                                </a>
+                            </div>
+                        {% else %}
+                            <p class="text-red-400 text-center">{{ ml_model|upper }} predictions unavailable due to insufficient data.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+        {% endfor %}
+
+        {% if combined_interactive %}
+            <section class="bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+                <h2 class="text-2xl font-semibold mb-4">Combined Portfolios Performance</h2>
+                <div class="text-center">
+                    <a href="{{ url_for('static', filename=combined_interactive) }}"
+                       class="inline-flex items-center px-6 py-3 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                       target="_blank">
+                        View Interactive Combined Chart
+                    </a>
+                </div>
+            </section>
+        {% endif %}
+
+
+
+        <div class="text-center mt-8 space-x-4">
+            <a href="/" class="inline-flex items-center px-6 py-3 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors">
+                Back to Simulator
+            </a>
+            <a href="{{ url_for('donate') }}" class="inline-flex items-center px-6 py-3 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors" target="_blank">
+                Donate
+            </a>
+        </div>
+    </main>
+
+    <footer class="text-center py-6 text-white">
+        <p>Powered by Hanuman Dynamics©</p>
+    </footer>
 </body>
 </html>

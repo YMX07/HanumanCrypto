@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Crypto Portfolio Simulator Logo" class="logo mx-auto">
     <title>DCA Simulation Results - Crypto Portfolio Simulator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -12,6 +13,16 @@
         };
     </script>
     <style>
+        .logo {
+            max-width: 20%;
+            max-height: 15vh;
+            width: auto;
+            height: auto;
+            transition: transform 0.3s ease;
+        }
+        .logo:hover {
+            transform: scale(1.10);
+        }
         .btn { transition: background-color 0.3s ease, transform 0.2s ease; }
         .btn:hover { transform: translateY(-2px); }
         .section-header { border-bottom: 2px solid #60A5FA; padding-bottom: 0.5rem; }
@@ -69,12 +80,6 @@
                             <div>
                                 <h3 class="text-xl font-medium text-gray-200 mb-2">Portfolio Value Over Time</h3>
                                 <iframe src="{{ url_for('static', filename=result.interactive_portfolio) }}" width="100%" height="600" frameborder="0" class="rounded-lg"></iframe>
-                            </div>
-                        {% endif %}
-                        {% if result.correlation_matrix_image %}
-                            <div>
-                                <h3 class="text-xl font-medium text-gray-200 mb-2">Cryptocurrency Correlation</h3>
-                                <iframe src="{{ url_for('static', filename=result.correlation_matrix_image) }}" width="100%" height="600" frameborder="0" class="rounded-lg"></iframe>
                             </div>
                         {% endif %}
                         {% if result.interactive_distribution %}

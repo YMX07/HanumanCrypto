@@ -1,252 +1,356 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portfolio Simulation Status</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <title>Simulation Status</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'dark-bg': '#1a2534',
+                        'primary': {"50":"#eff6ff","100":"#dbeafe","200":"#bfdbfe","300":"#93c5fd","400":"#60a5fa","500":"#3b82f6","600":"#2563eb","700":"#1d4ed8","800":"#1e40af","900":"#1e3a8a","950":"#172554"}
+                    }
+                }
+            }
+        };
+    </script>
     <style>
-        :root {
-            --primary-color: #0d6efd;
-            --success-color: #198754;
-            --danger-color: #dc3545;
-            --warning-color: #ffc107;
-            --secondary-color: #6c757d;
+        .logo {
+            max-width: 20%;
+            max-height: 15vh;
+            width: auto;
+            height: auto;
+            transition: transform 0.3s ease;
         }
-        .progress {
-            height: 1.5rem;
-            border-radius: 0.5rem;
-            overflow: hidden;
-        }
-        .task-card {
-            transition: box-shadow 0.3s ease;
-        }
-        .task-card:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-        .refresh-container {
-            margin: 1.5rem 0;
-            text-align: center;
+        .logo:hover {
+            transform: scale(1.10);
         }
         .error-pre {
-            background-color: #f8d7da;
-            border: 1px solid #f5c2c7;
+            background-color: #2d3748;
             padding: 0.5rem;
+            border-radius: 0.25rem;
             font-size: 0.875rem;
-            max-height: 10rem;
-            overflow-y: auto;
+            overflow-x: auto;
             white-space: pre-wrap;
-            word-wrap: break-word;
         }
-        footer {
-            margin-top: 2rem;
-            padding: 1rem 0;
-            text-align: center;
-            color: var(--secondary-color);
+        .status-icon {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            margin-right: 0.5rem;
         }
-        .container-logo{
-            max-width: 600px;
-            margin: 0 auto;
-            text-align: center;
+        .error-toggle {
+            cursor: pointer;
+            color: #f87171;
+            text-decoration: underline;
+        }
+        @media (max-width: 640px) {
+            .task-card {
+                font-size: 0.9rem;
+            }
+            .task-card .progress {
+                height: 0.75rem;
+            }
         }
     </style>
 </head>
-<body>
-    <div class="container-logo">
-        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="logo">
-        <p class="powered-by">Powered by Hanuman Dynamics©</p>
-    </div>
-    <div class="container py-5">
-        <h1 class="text-center mb-4 fw-bold">Portfolio Simulation Status</h1>
+<body class="bg-dark-bg text-gray-100 font-sans min-h-screen flex flex-col">
+    <header class="text-center py-6">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Crypto Portfolio Simulator Logo" class="mx-auto" style="max-width: 80%; max-height: 60vh;">
+        <p class="text-lg text-white mt-2">Powered by Hanuman Dynamics©</p>
+    </header>
 
-        <!-- Overall Progress Card -->
-        <div class="card mb-5 shadow-sm">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">Overall Progress</h4>
-            </div>
-            <div class="card-body">
-                <div class="progress mb-3">
-                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
-                         role="progressbar"
-                         style="width: {{ overall_progress }}%;"
-                         aria-valuenow="{{ overall_progress }}"
-                         aria-valuemin="0"
-                         aria-valuemax="100"
-                         id="overall-progress-bar">
-                        {{ overall_progress }}%
+    <main class="container mx-auto px-4 py-8 flex-grow">
+        <section class="bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+            <h1 class="text-3xl font-bold text-center mb-4">Simulation Status</h1>
+            <p class="text-center text-gray-300 mb-4">Batch ID: {{ batch_id }}</p>
+            <div class="flex justify-center mb-6">
+                <div class="w-full max-w-md">
+                    <h2 class="text-xl font-semibold mb-2">Overall Progress</h2>
+                    <div class="progress h-6 bg-gray-700 rounded-full overflow-hidden">
+                        <div class="progress-bar bg-primary-600 h-full transition-all duration-500 ease-in-out"
+                             role="progressbar"
+                             style="width: {{ overall_progress }}%;"
+                             aria-valuenow="{{ overall_progress }}"
+                             aria-valuemin="0"
+                             aria-valuemax="100"
+                             aria-label="Overall simulation progress">
+                            {{ overall_progress }}%
+                        </div>
+                    </div>
+                    <p class="mt-2 text-center text-gray-400">
+                        Completed: {{ completed_tasks }} / {{ total_tasks }} | Failed: {{ failed_tasks }}
+                    </p>
+                    <div class="flex justify-center space-x-4 mt-4">
+                        {% if not all_completed %}
+                            <button id="refreshBtn"
+                                    class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                    aria-label="Refresh simulation status">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9H0m0 11v-5h.582a8.001 8.001 0 0015.356-2H24"></path>
+                                </svg>
+                                <span>Refresh Status</span>
+                                <svg id="refreshSpinner" class="w-5 h-5 ml-2 hidden animate-spin" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                </svg>
+                            </button>
+                            <button id="cancelBtn"
+                                    class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-400"
+                                    aria-label="Cancel simulation">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                                Cancel Simulation
+                            </button>
+                        {% endif %}
+                        {% if all_completed %}
+                            <a href="/results/{{ batch_id }}"
+                               class="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-400"
+                               aria-label="View simulation results">
+                                View Results
+                            </a>
+                        {% endif %}
                     </div>
                 </div>
-                <p class="text-center mb-0">
-                    <strong>{{ completed_tasks }} of {{ total_tasks }}</strong> portfolios completed
-                    {% if failed_tasks > 0 %}
-                        <span class="text-danger"> ({{ failed_tasks }} failed)</span>
-                    {% endif %}
-                </p>
-                {% if all_completed %}
-                    <div class="text-center mt-4">
-                        <a href="{{ url_for('results', batch_id=batch_id) }}" class="btn btn-success btn-lg px-4">View Results</a>
+            </div>
+
+            <h2 class="text-2xl font-semibold mb-4">Individual Tasks</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for task in task_statuses %}
+                    <div class="col">
+                        <div class="task-card h-full shadow-sm rounded-lg overflow-hidden border border-gray-700 {% if task.status|default('UNKNOWN') == 'FAILED' %}border-red-600 shadow-red-500/50{% endif %}">
+                            <div class="card-header p-4
+                                {% if task.status|default('UNKNOWN') == 'COMPLETED' %}bg-green-600 text-white
+                                {% elif task.status|default('UNKNOWN') == 'FAILED' %}bg-red-600 text-white
+                                {% elif task.status|default('UNKNOWN') == 'PROCESSING' %}bg-yellow-600 text-gray-900
+                                {% else %}bg-gray-600 text-white{% endif %}">
+                                <h5 class="mb-0 flex items-center">
+                                    <span class="status-icon">
+                                        {% if task.status|default('UNKNOWN') == 'COMPLETED' %}
+                                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                            </svg>
+                                        {% elif task.status|default('UNKNOWN') == 'FAILED' %}
+                                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                            </svg>
+                                        {% elif task.status|default('UNKNOWN') == 'PROCESSING' %}
+                                            <svg class="w-5 h-5 text-gray-900 animate-spin" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                            </svg>
+                                        {% else %}
+                                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                        {% endif %}
+                                    </span>
+                                    Portfolio {{ task.portfolio_index|default(0) + 1 }}
+                                </h5>
+                                <p class="mb-0">
+                                    <strong>Status:</strong>
+                                    <span id="status-{{ task.portfolio_index|default(0) }}">{{ task.status|default('Unknown')|title }}</span>
+                                </p>
+                            </div>
+                            <div class="card-body p-4 bg-gray-700">
+                                <p class="mb-2">
+                                    <strong>Message:</strong>
+                                    <span id="message-{{ task.portfolio_index|default(0) }}">{{ task.message|default('No message') }}</span>
+                                </p>
+                                <div class="progress mb-3 h-4 bg-gray-600 rounded-full overflow-hidden">
+                                    <div class="progress-bar
+                                        {% if task.status|default('UNKNOWN') == 'PROCESSING' %}progress-bar-striped progress-bar-animated animate-pulse{% endif %}
+                                        {% if task.status|default('UNKNOWN') == 'COMPLETED' %}bg-green-600{% endif %}
+                                        {% if task.status|default('UNKNOWN') == 'FAILED' %}bg-red-600{% endif %}"
+                                        role="progressbar"
+                                        style="width: {{ task.progress|default(0) }}%;"
+                                        aria-valuenow="{{ task.progress|default(0) }}"
+                                        aria-valuemin="0"
+                                        aria-valuemax="100"
+                                        id="progress-{{ task.portfolio_index|default(0) }}"
+                                        aria-label="Progress for Portfolio {{ task.portfolio_index|default(0) + 1 }}">
+                                        {{ task.progress|default(0) }}%
+                                    </div>
+                                </div>
+                                <p class="mb-2"><strong>Start Date:</strong> {{ task.start_date|default('N/A') }}</p>
+                                <p class="mb-2"><strong>Capital:</strong> <span id="initial-capital-{{ task.portfolio_index|default(0) }}">{{ task.capital|default('N/A') }}</span></p>
+                                <p class="mb-2"><strong>Frequency:</strong> {{ task.frequency|default('N/A')|title }}</p>
+                                <p class="mb-2"><strong>Cryptos:</strong> {{ task.cryptos|default([])|join(', ') }}</p>
+                                <p class="mb-2">
+                                    <strong>Allocations:</strong>
+                                    {% if task.allocations %}
+                                        {% if task.allocations is mapping %}
+                                            <!-- Dictionary case -->
+                                            {% for crypto, alloc in task.allocations.items() %}
+                                                {{ crypto }}: {{ (alloc * 100)|int }}%
+                                                {% if not loop.last %}, {% endif %}
+                                            {% endfor %}
+                                        {% else %}
+                                            <!-- List case -->
+                                            {% for i in range(task.cryptos|length) %}
+                                                {{ task.cryptos[i] }}: {{ (task.allocations[i] * 100)|int }}%
+                                                {% if not loop.last %}, {% endif %}
+                                            {% endfor %}
+                                        {% endif %}
+                                    {% else %}
+                                        None
+                                    {% endif %}
+                                </p>
+                                {% if task.status|default('UNKNOWN') == 'FAILED' and task.error %}
+                                    <div class="mt-3">
+                                        <p class="text-red-400 mb-1 error-toggle" onclick="toggleError('error-{{ task.portfolio_index|default(0) }}')">
+                                            <strong>Error:</strong> (click to toggle)
+                                        </p>
+                                        <pre id="error-{{ task.portfolio_index|default(0) }}" class="error-pre hidden">{{ task.error }}</pre>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
                 {% else %}
-                    <div class="refresh-container">
-                        <p class="text-muted mb-2">Refreshing every 10 seconds...</p>
-                        <button id="refresh-btn" class="btn btn-outline-primary">Refresh Now</button>
-                        <div id="refresh-error" class="text-danger mt-2" style="display: none;"></div>
-                    </div>
-                {% endif %}
+                    <p class="text-center text-gray-400">No tasks found for this batch.</p>
+                {% endfor %}
             </div>
-        </div>
+        </section>
+    </main>
 
-        <!-- Individual Tasks Section -->
-        <h3 class="mb-4 fw-semibold">Individual Tasks</h3>
-        <div class="row row-cols-1 row-cols-md-2 g-4">
-            {% for task in task_statuses %}
-                <div class="col">
-                    <div class="card task-card h-100 shadow-sm">
-                        <div class="card-header
-                            {% if task['status'] == 'COMPLETED' %}bg-success text-white
-                            {% elif task['status'] == 'FAILED' %}bg-danger text-white
-                            {% elif task['status'] == 'PROCESSING' %}bg-warning text-dark
-                            {% else %}bg-secondary text-white{% endif %}">
-                            <h5 class="mb-0">Portfolio {{ task['portfolio_index'] + 1 }}</h5>
-                            <p class="mb-0">
-                                <strong>Status:</strong>
-                                <span id="status-{{ task['portfolio_index'] }}">{{ task['status']|title }}</span>
-                            </p>
-                        </div>
-                        <div class="card-body">
-                            <p class="mb-2">
-                                <strong>Message:</strong>
-                                <span id="message-{{ task['portfolio_index'] }}">{{ task['message'] }}</span>
-                            </p>
-                            <div class="progress mb-3">
-                                <div class="progress-bar
-                                    {% if task['status'] == 'PROCESSING' %}progress-bar-striped progress-bar-animated{% endif %}
-                                    {% if task['status'] == 'COMPLETED' %}bg-success{% endif %}
-                                    {% if task['status'] == 'FAILED' %}bg-danger{% endif %}"
-                                    role="progressbar"
-                                    style="width: {{ task['progress'] }}%;"
-                                    aria-valuenow="{{ task['progress'] }}"
-                                    aria-valuemin="0"
-                                    aria-valuemax="100"
-                                    id="progress-{{ task['portfolio_index'] }}">
-                                    {{ task['progress'] }}%
-                                </div>
-                            </div>
-                            {% if task['status'] == 'FAILED' and task['error'] %}
-                                <div class="mt-3">
-                                    <p class="text-danger mb-1"><strong>Error:</strong></p>
-                                    <pre class="error-pre">{{ task['error'] }}</pre>
-                                </div>
-                            {% endif %}
+    <footer class="text-center py-6 text-white">
+        <p>Powered by Hanuman Dynamics©</p>
+    </footer>
 
-                        </div>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
-
-        <!-- Footer with Back Link -->
-        <footer>
-            <a href="{{ url_for('index') }}" class="btn btn-outline-primary me-2">Back to Home</a>
-            <a href="{{ url_for('donate') }}" class="btn btn-outline-primary me-2" target="_blank">Support Us</a>
-        </footer>
-    </div>
-
-    <!-- Scripts -->
-    <script src="https://code.jquery.com/jquery-3.7.1.slim.min.js" integrity="sha256-kmHvs0B+OpCW5GVHUNjv9rOmY0IvSIRcf7zGUDTDQM8=" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
     <script>
-        // Constants
-        const REFRESH_INTERVAL = 10000; // 10 seconds
         const TASK_IDS = [
             {% for task in task_statuses %}
-                "{{ batch_id }}_{{ task['portfolio_index'] }}",
+                "{{ batch_id }}_{{ task.portfolio_index|default(0) }}",
             {% endfor %}
         ];
-        const TOTAL_TASKS = {{ total_tasks }};
 
-        // Auto-refresh if not all tasks are completed
-        let refreshInterval;
-        {% if not all_completed %}
-            refreshInterval = setInterval(updateTaskStatus, REFRESH_INTERVAL);
-        {% endif %}
+        let updateInterval = null;
 
-        // Manual refresh button
-        document.getElementById('refresh-btn')?.addEventListener('click', () => {
-            clearInterval(refreshInterval);
-            updateTaskStatus();
-            refreshInterval = setInterval(updateTaskStatus, REFRESH_INTERVAL);
-        });
+        function toggleError(errorId) {
+            const errorPre = document.getElementById(errorId);
+            errorPre.classList.toggle('hidden');
+        }
 
-        function updateTaskStatus() {
-            const refreshError = document.getElementById('refresh-error');
-            refreshError.style.display = 'none';
+        function updateTaskStatus(manual = false) {
+            const refreshBtn = document.getElementById('refreshBtn');
+            const refreshSpinner = document.getElementById('refreshSpinner');
 
-            let completedCount = 0;
-            let failedCount = 0;
-            let totalProgress = 0;
+            if (manual && refreshBtn) {
+                refreshBtn.disabled = true;
+                refreshSpinner.classList.remove('hidden');
+            }
 
             const fetchPromises = TASK_IDS.map(taskId =>
                 fetch(`/task_status/${taskId}`, { cache: 'no-store' })
                     .then(response => {
-                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
                         return response.json();
                     })
                     .then(data => {
-                        const idx = data['portfolio_index'];
-                        const statusElem = document.getElementById(`status-${idx}`);
-                        const messageElem = document.getElementById(`message-${idx}`);
-                        const progressBar = document.getElementById(`progress-${idx}`);
-                        const initialCapitalElem = document.getElementById(`initial-capital-${idx}`);
+                        const index = taskId.split('_').pop();
+                        const statusElement = document.getElementById(`status-${index}`);
+                        const messageElement = document.getElementById(`message-${index}`);
+                        const progressBar = document.getElementById(`progress-${index}`);
 
-                        if (statusElem) statusElem.textContent = data['status'].charAt(0).toUpperCase() + data['status'].slice(1).toLowerCase();
-                        if (messageElem) messageElem.textContent = data['message'];
-                        if (progressBar) {
-                            progressBar.style.width = `${data['progress']}%`;
-                            progressBar.setAttribute('aria-valuenow', data['progress']);
-                            progressBar.textContent = `${data['progress']}%`;
-                            progressBar.className = 'progress-bar';
-                            if (data['status'] === 'PROCESSING') {
-                                progressBar.classList.add('progress-bar-striped', 'progress-bar-animated');
-                            } else if (data['status'] === 'COMPLETED') {
-                                progressBar.classList.add('bg-success');
-                            } else if (data['status'] === 'FAILED') {
-                                progressBar.classList.add('bg-danger');
-                            }
-                        }
-                        // Update initial capital without '$' prefix, assuming backend provides formatted string
-                        if (initialCapitalElem && 'initial_capital' in data) {
-                            initialCapitalElem.textContent = data['initial_capital'];
-                        }
+                        statusElement.textContent = data.status.charAt(0).toUpperCase() + data.status.slice(1).toLowerCase();
+                        messageElement.textContent = data.message || 'No message';
+                        progressBar.style.width = `${data.progress}%`;
+                        progressBar.textContent = `${data.progress}%`;
+                        progressBar.setAttribute('aria-valuenow', data.progress);
 
-                        if (data['status'] === 'COMPLETED') completedCount++;
-                        if (data['status'] === 'FAILED') failedCount++;
-                        totalProgress += data['progress'] || 0;
+                        if (data.status === 'COMPLETED') {
+                            progressBar.classList.remove('progress-bar-animated', 'progress-bar-striped', 'animate-pulse');
+                            progressBar.classList.add('bg-green-600');
+                            statusElement.parentElement.parentElement.classList.remove('bg-yellow-600', 'text-gray-900', 'bg-red-600', 'text-white');
+                            statusElement.parentElement.parentElement.classList.add('bg-green-600', 'text-white');
+                        } else if (data.status === 'FAILED') {
+                            progressBar.classList.remove('progress-bar-animated', 'progress-bar-striped', 'animate-pulse');
+                            progressBar.classList.add('bg-red-600');
+                            statusElement.parentElement.parentElement.classList.remove('bg-yellow-600', 'text-gray-900', 'bg-green-600', 'text-white');
+                            statusElement.parentElement.parentElement.classList.add('bg-red-600', 'text-white');
+                        } else if (data.status === 'PROCESSING') {
+                            progressBar.classList.add('progress-bar-animated', 'progress-bar-striped', 'animate-pulse');
+                            progressBar.classList.remove('bg-green-600', 'bg-red-600');
+                            statusElement.parentElement.parentElement.classList.remove('bg-green-600', 'text-white', 'bg-red-600', 'text-white');
+                            statusElement.parentElement.parentElement.classList.add('bg-yellow-600', 'text-gray-900');
+                        }
                     })
                     .catch(error => {
-                        console.error(`Error fetching ${taskId}:`, error);
-                        refreshError.textContent = 'Failed to update some tasks. Retrying...';
-                        refreshError.style.display = 'block';
+                        console.error(`Error fetching status for ${taskId}:`, error);
                     })
             );
 
-            Promise.allSettled(fetchPromises).then(() => {
-                const overallProgress = Math.round(totalProgress / TOTAL_TASKS);
-                const progressBar = document.getElementById('overall-progress-bar');
-                progressBar.style.width = `${overallProgress}%`;
-                progressBar.setAttribute('aria-valuenow', overallProgress);
-                progressBar.textContent = `${overallProgress}%`;
-
-                document.querySelector('.text-center strong').textContent = `${completedCount} of ${TOTAL_TASKS}`;
-                const failedSpan = document.querySelector('.text-danger');
-                if (failedCount > 0 && failedSpan) failedSpan.textContent = ` (${failedCount} failed)`;
-
-                if (completedCount + failedCount === TOTAL_TASKS) {
-                    clearInterval(refreshInterval);
-                    setTimeout(() => window.location.href = `/results/{{ batch_id }}`, 500);
+            Promise.all(fetchPromises).then(() => {
+                const completedTasks = document.querySelectorAll('.bg-green-600').length;
+                const failedTasks = document.querySelectorAll('.bg-red-600').length;
+                if (completedTasks + failedTasks === TASK_IDS.length && TASK_IDS.length > 0) {
+                    if (updateInterval) {
+                        clearInterval(updateInterval);
+                        updateInterval = null;
+                    }
+                    window.location.href = `/results/${TASK_IDS[0].split('_')[0]}`;
+                }
+                if (manual && refreshBtn) {
+                    refreshBtn.disabled = false;
+                    refreshSpinner.classList.add('hidden');
                 }
             });
+        }
+
+        function cancelSimulation() {
+            if (confirm('Are you sure you want to cancel the simulation? This cannot be undone.')) {
+                fetch(`/cancel_simulation/${TASK_IDS[0].split('_')[0]}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        if (updateInterval) {
+                            clearInterval(updateInterval);
+                            updateInterval = null;
+                        }
+                        alert('Simulation cancelled successfully.');
+                        window.location.href = '/';
+                    } else {
+                        alert('Failed to cancel simulation: ' + (data.message || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error cancelling simulation:', error);
+                    alert('Error cancelling simulation. Please try again.');
+                });
+            }
+        }
+
+        if (TASK_IDS.length > 0 && !{{ all_completed|lower }}) {
+            // Start automatic updates
+            updateInterval = setInterval(() => updateTaskStatus(false), 10000);
+            updateTaskStatus(false); // Initial call
+
+            // Attach event listener for manual refresh
+            const refreshBtn = document.getElementById('refreshBtn');
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', () => {
+                    updateTaskStatus(true); // Manual refresh
+                });
+            }
+
+            // Attach event listener for cancel
+            const cancelBtn = document.getElementById('cancelBtn');
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', cancelSimulation);
+            }
         }
     </script>
 </body>

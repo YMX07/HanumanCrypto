@@ -3,57 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Co-integration test results for two cryptocurrencies.">
-    <title>Co-integration Test Results</title>
+    <title>Cointegration Test Results</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        'dark-bg': '#1a2534',
-                        'primary': {"50":"#eff6ff","100":"#dbeafe","200":"#bfdbfe","300":"#93c5fd","400":"#60a5fa","500":"#3b82f6","600":"#2563eb","700":"#1d4ed8","800":"#1e40af","900":"#1e3a8a","950":"#172554"}
-                    }
-                }
-            }
-        };
+        tailwind.config = { darkMode: 'class', theme: { extend: { colors: { 'dark-bg': '#1a2534' } } } };
     </script>
-    <style>
-        .logo { max-width: 80%; max-height: 60vh; width: auto; height: auto; transition: transform 0.3s ease; }
-        .logo:hover { transform: scale(1.05); }
-        .btn { transition: background-color 0.3s ease, transform 0.2s ease; }
-        .btn:hover { transform: translateY(-2px); }
-        @media (max-width: 640px) { .logo { max-width: 60%; max-height: 40vh; } }
-    </style>
 </head>
 <body class="bg-dark-bg text-gray-100 font-sans min-h-screen flex flex-col">
     <header class="text-center py-6">
-        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Crypto Portfolio Simulator Logo" class="logo mx-auto">
-        <p class="text-lg text-white mt-2">Powered by Hanuman Dynamics©</p>
+        <h1 class="text-3xl font-bold">Co-Integration Test Results</h1>
     </header>
+    <main class="container mx-auto px-4 py-8 flex-grow">
+        <section class="bg-gray-800 rounded-lg shadow-md p-6">
+            <h2 class="text-2xl font-semibold mb-4">Test Results</h2>
+            <p><strong>Cryptocurrencies:</strong> {{ result.crypto1 }} vs {{ result.crypto2 }}</p>
+            <p><strong>Date Range:</strong> {{ result.start_date }} to {{ result.end_date }}</p>
+            <p><strong>Test Statistic:</strong> {{ result.score }}</p>
+            <p><strong>P-value:</strong> {{ result.p_value }} (Threshold: 0.05)</p>
+            <p><strong>Result:</strong> {{ result.message }}</p>
 
-    <main class="container mx-auto px-4 py-8 flex-grow flex items-center justify-center">
-        <div class="bg-gray-800 rounded-lg shadow-md p-6 max-w-lg w-full">
-            <h1 class="text-2xl font-bold text-blue-400 text-center mb-6">Co-integration Test Results</h1>
-            <div class="space-y-4 text-gray-200">
-                <p><strong>Cryptocurrencies:</strong> {{ result.crypto1 }} vs {{ result.crypto2 }}</p>
-                <p><strong>Date Range:</strong> {{ result.start_date }} to {{ result.end_date }}</p>
-                <p><strong>Test Statistic:</strong> {{ result.score }}</p>
-                <p><strong>P-value:</strong> {{ result.p_value }} <span class="text-sm text-gray-400">(Threshold: 0.05)</span></p>
-                <p class="{% if result.is_cointegrated %}text-green-400{% else %}text-red-400{% endif %} font-semibold">
-                    {{ result.message }}
-                </p>
-            </div>
-            <div class="text-center space-x-4 mt-6">
-                <a href="/" class="btn inline-flex items-center px-6 py-3 bg-red-600 text-white rounded-md hover:bg-red-700" aria-label="Back to Home">Back to Home</a>
-                <a href="{{ url_for('donate') }}" class="btn inline-flex items-center px-6 py-3 bg-red-600 text-white rounded-md hover:bg-red-700" target="_blank" aria-label="Donate to support the project">Donate</a>
-            </div>
-        </div>
+            {% if result.is_cointegrated and result.stationary_portfolio_chart %}
+                <h2 class="text-2xl font-semibold mt-6 mb-4">Stationary Portfolio Performance</h2>
+                <iframe src="{{ url_for('static', filename=result.stationary_portfolio_chart) }}" class="w-full h-[600px] border-0" title="Stationary Portfolio Performance"></iframe>
+                <div class="text-center mt-2">
+                    <a href="{{ url_for('static', filename=result.stationary_portfolio_chart) }}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700" target="_blank">View Interactive Chart</a>
+                </div>
+            {% endif %}
+
+            {% if result.is_cointegrated and result.trading_pnl_chart %}
+                <h2 class="text-2xl font-semibold mt-6 mb-4">Trading Profit and Loss</h2>
+                <p><strong>Total P&L:</strong> ${{ result.total_pnl }}</p>
+                <p><strong>Win Rate:</strong> {{ result.win_rate }}%</p>
+                <iframe src="{{ url_for('static', filename=result.trading_pnl_chart) }}" class="w-full h-[600px] border-0" title="Trading Profit and Loss"></iframe>
+                <div class="text-center mt-2">
+                    <a href="{{ url_for('static', filename=result.trading_pnl_chart) }}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700" target="_blank">View Interactive Chart</a>
+                </div>
+            {% endif %}
+        </section>
     </main>
-
     <footer class="text-center py-6 text-white">
-        <p>Powered by Hanuman Dynamics©</p>
+        <div class="flex justify-center space-x-4">
+            <a href="{{ url_for('index') }}" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Back to Home</a>
+            <a href="{{ url_for('donate') }}" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Donate</a>
+        </div>
+        <p class="mt-2">Powered by Hanuman Dynamics©</p>
     </footer>
 </body>
 </html>

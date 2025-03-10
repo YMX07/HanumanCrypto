@@ -22,13 +22,14 @@
     </script>
     <style>
         .logo { transition: transform 0.3s ease; }
-        .logo:hover { transform: scale(1.05); }
+        .logo:hover { transform: scale(1.2); }
         .form-container button:disabled { opacity: 0.5; cursor: not-allowed; }
         .error-message { color: #f87171; font-size: 0.875rem; margin-top: 0.25rem; }
         .btn { transition: background-color 0.3s ease, transform 0.2s ease; }
         .btn:hover { transform: translateY(-2px); }
         .tab-button { background-color: #2d3748; border-bottom: 2px solid transparent; }
         .tab-button.active { background-color: #e53e3e; border-bottom: 2px solid #fff; }
+        .portfolio-error { color: #f87171; font-size: 0.875rem; margin-top: 0.25rem; }
         @media (max-width: 640px) {
             .logo { max-width: 60%; max-height: 40vh; }
             .tab-button { font-size: 0.875rem; padding: 0.5rem; }
@@ -37,7 +38,7 @@
 </head>
 <body class="bg-dark-bg text-gray-100 font-sans min-h-screen flex flex-col items-center justify-center p-4">
     <header class="mb-6 text-center">
-        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Crypto Portfolio Simulator Logo" class="logo mx-auto max-w-[80%] max-h-[60vh]">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Crypto Portfolio Simulator Logo" class="logo mx-auto max-w-[20%] max-h-[15vh]">
         <p class="text-lg text-gray-300 mt-2">Powered by Hanuman Dynamics©</p>
         <a href="{{ url_for('donate') }}" class="inline-flex items-center px-6 py-3 bg-red-600 text-white rounded-md hover:bg-red-700 transition btn mt-4" target="_blank" aria-label="Donate to support the project">Donate</a>
     </header>
@@ -46,16 +47,15 @@
         <div class="bg-gray-800 rounded-lg shadow-md p-6 form-container">
             <h1 class="text-2xl font-bold text-center text-blue-400 mb-6">Crypto Analysis Tools</h1>
 
-            <!-- Tabs -->
             <div class="flex space-x-2 mb-6 border-b border-gray-600">
                 <button id="portfolio-tab" class="tab-button flex-1 py-2 px-4 rounded-t-md font-semibold active" onclick="showTab('portfolio')">Portfolio Simulator</button>
                 <button id="dca-tab" class="tab-button flex-1 py-2 px-4 rounded-t-md font-semibold" onclick="showTab('dca')">DCA Simulator</button>
                 <button id="cointegration-tab" class="tab-button flex-1 py-2 px-4 rounded-t-md font-semibold" onclick="showTab('cointegration')">Co-integration</button>
             </div>
 
-            <!-- Portfolio Simulator Tab -->
             <div id="portfolio-content" class="tab-content">
                 <form action="/simulate" method="post" id="simulatorForm" class="space-y-6" novalidate>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <input type="hidden" name="portfolio_count" id="portfolioCountInput" value="0">
                     <div>
                         <label for="start-date" class="block text-gray-200 font-semibold mb-2">Start Date</label>
@@ -94,9 +94,9 @@
                 </form>
             </div>
 
-            <!-- DCA Simulator Tab -->
             <div id="dca-content" class="tab-content hidden">
                 <form action="/dca" method="post" id="dcaForm" class="space-y-6" novalidate>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <div>
                         <label for="dca-start-date" class="block text-gray-200 font-semibold mb-2">Start Date</label>
                         <input type="date" id="dca-start-date" name="start_date" required class="w-full p-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
@@ -129,9 +129,9 @@
                 </form>
             </div>
 
-            <!-- Co-integration Tab -->
             <div id="cointegration-content" class="tab-content hidden">
                 <form action="/cointegration" method="post" id="cointegrationForm" class="space-y-6" novalidate>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <div>
                         <label class="block text-gray-200 font-semibold mb-2">First Cryptocurrency</label>
                         <div id="crypto1-container"></div>
@@ -151,6 +151,20 @@
                         <label for="coin-end-date" class="block text-gray-200 font-semibold mb-2">End Date</label>
                         <input type="date" id="coin-end-date" name="end_date" required class="w-full p-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
                         <p id="coin-end-date-error" class="error-message hidden">End date must be after start date.</p>
+                    </div>
+
+                    <div>
+                        <label for="ml_model" class="block text-gray-200 font-semibold mb-2">Trading Strategy</label>
+                        <select id="strategy" name="strategy" class="w-full p-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
+                            <option value="mean_reversion">Mean Reversion</option>
+                            <option value="bollinger_bands">Bollinger Bands</option>
+                            <option value="correlation">Correlation-Based</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="initial-capital" class="block text-gray-200 font-semibold mb-2">Initial Capital ($)</label>
+                        <input type="number" id="cointegration-initial-capital" name="initial_capital" value="10000" min="100" step="100" class="w-full p-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition">
+                        <p id="cointegration-initial-capital-error" class="error-message hidden">Minimum capital is $100.</p>
                     </div>
                     <button type="submit" id="cointegrationBtn" class="w-full py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition btn disabled:opacity-50 disabled:cursor-not-allowed">Test Co-integration</button>
                 </form>
@@ -204,14 +218,34 @@
 
         let portfolioCounter = 0;
 
+
         document.addEventListener('DOMContentLoaded', () => {
-            addNewPortfolio();
-            document.getElementById('addPortfolioBtn').addEventListener('click', addNewPortfolio);
+            console.log('DOM fully loaded');
+            if (typeof TomSelect === 'undefined') {
+                console.error('TomSelect not loaded. Check the script URL or network.');
+            } else {
+                console.log('TomSelect loaded successfully');
+            }
+            addNewPortfolio(); // Initialize with one portfolio
+            const addPortfolioBtn = document.getElementById('addPortfolioBtn');
+            if (addPortfolioBtn) {
+                addPortfolioBtn.addEventListener('click', () => {
+                    console.log('Add New Portfolio button clicked');
+                    addNewPortfolio();
+                });
+            } else {
+                console.error('addPortfolioBtn not found');
+            }
             document.getElementById('resetPortfolioBtn').addEventListener('click', resetPortfolioForm);
             setupPortfolioValidation();
             setupDcaForm();
             setupCointegrationForm();
             showTab('portfolio');
+            setTimeout(() => {
+                validatePortfolioForm();
+                validateDcaForm();
+                validateCointegrationForm();
+            }, 200);
         });
 
         function showTab(tabName) {
@@ -219,12 +253,19 @@
             document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
             document.getElementById(`${tabName}-content`).classList.remove('hidden');
             document.getElementById(`${tabName}-tab`).classList.add('active');
-            if (tabName === 'portfolio') validatePortfolioForm();
-            else if (tabName === 'dca') validateDcaForm();
-            else if (tabName === 'cointegration') validateCointegrationForm();
+            if (tabName === 'portfolio') {
+                validatePortfolioForm();
+            } else if (tabName === 'dca') {
+                setupDcaForm();
+                validateDcaForm();
+            } else if (tabName === 'cointegration') {
+                setupCointegrationForm();
+                validateCointegrationForm();
+            }
         }
 
         function addNewPortfolio() {
+            console.log('addNewPortfolio called');
             portfolioCounter++;
             const portfolioId = `portfolio_${portfolioCounter - 1}`;
             document.getElementById('portfolioCountInput').value = portfolioCounter;
@@ -251,6 +292,7 @@
                 const opt = document.createElement('option');
                 opt.value = option.value;
                 opt.textContent = option.text;
+                // Removed default selections for BTC and ETH
                 cryptoSelect.appendChild(opt);
             });
 
@@ -263,26 +305,63 @@
             totalAllocationDisplay.className = 'text-right mt-2 font-semibold text-gray-200';
             totalAllocationDisplay.textContent = 'Total Allocation: 0%';
 
+            const portfolioError = document.createElement('p');
+            portfolioError.id = `${portfolioId}_error`;
+            portfolioError.className = 'portfolio-error hidden';
+
             portfolioContainer.appendChild(portfolioTitle);
             portfolioContainer.appendChild(cryptoSelect);
             portfolioContainer.appendChild(allocationsContainer);
             portfolioContainer.appendChild(totalAllocationDisplay);
+            portfolioContainer.appendChild(portfolioError);
 
-            document.getElementById('portfoliosContainer').appendChild(portfolioContainer);
+            const portfoliosContainer = document.getElementById('portfoliosContainer');
+            if (portfoliosContainer) {
+                portfoliosContainer.appendChild(portfolioContainer);
+                console.log(`Portfolio ${portfolioId} appended to portfoliosContainer`);
+            } else {
+                console.error('portfoliosContainer not found');
+                return;
+            }
 
-            new TomSelect(`#${portfolioId}_cryptoSelect`, {
-                plugins: ['remove_button'],
-                maxItems: 10,
-                placeholder: 'Start typing...',
-                closeAfterSelect: true,
-                onChange: () => {
-                    updateAllocations(portfolioId);
-                    validatePortfolioForm();
+            // Ensure TomSelect initializes after DOM update
+            setTimeout(() => {
+                if (typeof TomSelect === 'undefined') {
+                    console.error('TomSelect not loaded');
+                    return;
                 }
-            });
+                const selectElement = document.getElementById(`${portfolioId}_cryptoSelect`);
+                if (!selectElement) {
+                    console.error(`Select element #${portfolioId}_cryptoSelect not found`);
+                    return;
+                }
+                try {
+                    const tomSelectInstance = new TomSelect(selectElement, {
+                        plugins: ['remove_button'],
+                        maxItems: 10,
+                        placeholder: 'Start typing...',
+                        closeAfterSelect: true,
+                        onChange: () => {
+                            updateAllocations(portfolioId);
+                            validatePortfolioForm();
+                        },
+                        onInitialize: function() {
+                            // Removed this.clear() to avoid clearing selections unnecessarily
+                            updateAllocations(portfolioId);
+                            console.log(`TomSelect initialized for ${portfolioId}, selected: ${this.items}`);
+                        }
+                    });
+                    if (!tomSelectInstance) {
+                        console.error(`Failed to initialize TomSelect for ${portfolioId}`);
+                    }
+                    // Validate form after TomSelect and allocations are set up
+                    validatePortfolioForm();
+                } catch (error) {
+                    console.error(`Error initializing TomSelect for ${portfolioId}:`, error);
+                }
+            }, 0);
 
             console.log(`Added portfolio ${portfolioId}`);
-            validatePortfolioForm();
         }
 
         function deletePortfolio(portfolioId) {
@@ -308,6 +387,7 @@
                     });
                     p.querySelector('[id$="_allocationSliders"]').id = `portfolio_${index}_allocationSliders`;
                     p.querySelector('[id$="_totalAllocation"]').id = `portfolio_${index}_totalAllocation`;
+                    p.querySelector('[id$="_error"]').id = `portfolio_${index}_error`;
                 });
                 if (portfolioCounter === 0) addNewPortfolio();
                 console.log(`Deleted portfolio ${portfolioId}, remaining: ${portfolioCounter}`);
@@ -317,10 +397,24 @@
 
         function updateAllocations(portfolioId) {
             const select = document.querySelector(`#${portfolioId}_cryptoSelect`).tomselect;
+            if (!select) {
+                console.error(`TomSelect instance not found for ${portfolioId}`);
+                return;
+            }
             const selectedCryptos = select.items;
+            console.log(`Updating allocations for ${portfolioId}, selected: ${selectedCryptos}`);
             const slidersContainer = document.getElementById(`${portfolioId}_allocationSliders`);
+            if (!slidersContainer) {
+                console.error(`Allocation sliders container not found for ${portfolioId}`);
+                return;
+            }
             slidersContainer.innerHTML = '';
             const defaultAllocation = selectedCryptos.length ? Math.floor(100 / selectedCryptos.length) : 0;
+
+            if (selectedCryptos.length === 0) {
+                console.warn(`No cryptocurrencies selected for ${portfolioId}, skipping allocation sliders`);
+                return;
+            }
 
             selectedCryptos.forEach(crypto => {
                 const container = document.createElement('div');
@@ -351,16 +445,23 @@
                 slidersContainer.appendChild(container);
             });
             calculateTotalAllocation(portfolioId);
-            console.log(`Updated allocations for ${portfolioId}, selected: ${selectedCryptos}`);
+            console.log(`Updated allocations for ${portfolioId}, sliders created for: ${selectedCryptos}`);
         }
 
         function calculateTotalAllocation(portfolioId) {
             const sliders = document.querySelectorAll(`#${portfolioId}_allocationSliders input[type="range"]`);
             const total = Array.from(sliders).reduce((sum, slider) => sum + parseInt(slider.value || 0), 0);
             const display = document.getElementById(`${portfolioId}_totalAllocation`);
+            const error = document.getElementById(`${portfolioId}_error`);
             if (display) {
                 display.textContent = `Total Allocation: ${total}%`;
                 display.style.color = total === 100 ? '#10B981' : '#f87171';
+                if (total !== 100 && error) {
+                    error.textContent = `Allocation must sum to 100%. Current total: ${total}%`;
+                    error.classList.remove('hidden');
+                } else if (error) {
+                    error.classList.add('hidden');
+                }
                 console.log(`Calculated total for ${portfolioId}: ${total}`);
             } else {
                 console.error(`Total allocation display not found for ${portfolioId}`);
@@ -386,19 +487,16 @@
                     document.getElementById('simulateBtn').disabled = true;
                 }
             });
-            validatePortfolioForm();
         }
 
         function validatePortfolioForm() {
             const startDate = document.getElementById('start-date').value;
             const endDate = document.getElementById('end-date').value;
-            const capital = document.getElementById('capital').value;
-            const cryptos = document.getElementById('cryptos').tomselect.items;
-            const totalAllocation = parseInt(document.getElementById('total-allocation').textContent.match(/\d+/)[0]);
-            const submitBtn = document.getElementById('portfolioSimulateBtn');
+            const capital = document.getElementById('initial-capital').value;
+            const submitBtn = document.getElementById('simulateBtn');
 
             let isValid = true;
-            ['start-date-error', 'end-date-error', 'capital-error', 'cryptos-error'].forEach(id => {
+            ['start-date-error', 'end-date-error', 'initial-capital-error'].forEach(id => {
                 document.getElementById(id).classList.add('hidden');
             });
 
@@ -411,19 +509,33 @@
                 isValid = false;
             }
             if (!capital || capital < 100) {
-                document.getElementById('capital-error').classList.remove('hidden');
-                isValid = false;
-            }
-            if (cryptos.length === 0) {
-                document.getElementById('cryptos-error').classList.remove('hidden');
-                isValid = false;
-            }
-            if (totalAllocation !== 100) {
+                document.getElementById('initial-capital-error').classList.remove('hidden');
                 isValid = false;
             }
 
-            submitBtn.disabled = !isValid;
-            submitBtn.textContent = isValid ? 'Simulate Portfolio' : 'Fix Errors to Simulate';
+            const portfolios = document.querySelectorAll('[id^="portfolio_"]');
+            portfolios.forEach(portfolio => {
+                const totalAllocationDisplay = document.getElementById(`${portfolio.id}_totalAllocation`);
+                if (totalAllocationDisplay) {
+                    const totalAllocation = parseInt(totalAllocationDisplay.textContent.match(/\d+/)?.[0] || 0);
+                    if (totalAllocation !== 100) {
+                        isValid = false;
+                        const error = document.getElementById(`${portfolio.id}_error`);
+                        if (error) {
+                            error.textContent = `Allocation must sum to 100%. Current total: ${totalAllocation}%`;
+                            error.classList.remove('hidden');
+                        }
+                    } else {
+                        const error = document.getElementById(`${portfolio.id}_error`);
+                        if (error) error.classList.add('hidden');
+                    }
+                } else {
+                    console.warn(`Total allocation display not found for ${portfolio.id}, skipping validation for this portfolio`);
+                }
+            });
+
+            submitBtn.disabled = !isValid || portfolios.length === 0;
+            submitBtn.textContent = isValid ? 'Simulate All Portfolios' : 'Fix Errors to Simulate';
             return isValid;
         }
 
@@ -445,6 +557,16 @@
 
         function setupDcaForm() {
             const container = document.getElementById('dca-cryptos-container');
+            if (!container) {
+                console.error('dca-cryptos-container not found');
+                return;
+            }
+
+            let existingSelect = container.querySelector('select#dca-cryptos');
+            if (existingSelect && existingSelect.tomselect) {
+                existingSelect.tomselect.destroy();
+            }
+
             const cryptoSelect = document.createElement('select');
             cryptoSelect.name = 'cryptos[]';
             cryptoSelect.id = 'dca-cryptos';
@@ -459,6 +581,7 @@
                 cryptoSelect.appendChild(opt);
             });
 
+            container.innerHTML = '';
             container.appendChild(cryptoSelect);
 
             new TomSelect('#dca-cryptos', {
@@ -467,7 +590,9 @@
                 placeholder: 'Start typing...',
                 closeAfterSelect: true,
                 onInitialize: function() {
-                    console.log('DCA Crypto Selector Initialized');
+                    this.clear();
+                    console.log('DCA Crypto Selector Initialized with ADA');
+                    updateDcaAllocations();
                 },
                 onChange: () => {
                     updateDcaAllocations();
@@ -527,7 +652,8 @@
                 container.appendChild(value);
                 slidersContainer.appendChild(container);
             });
-            calculateDcaTotalAllocation();
+            calculateDcaTotalAllocation(); // Ensure total is calculated
+            validateDcaForm(); // Re-validate after update
         }
 
         function calculateDcaTotalAllocation() {
@@ -541,14 +667,17 @@
         function validateDcaForm() {
             const startDate = document.getElementById('dca-start-date').value;
             const capital = document.getElementById('dca-capital').value;
-            const cryptos = document.getElementById('dca-cryptos').tomselect.items;
-            const totalAllocation = parseInt(document.getElementById('dca-total-allocation').textContent.match(/\d+/)[0]);
+            const cryptos = document.getElementById('dca-cryptos')?.tomselect?.items || [];
+            const totalAllocation = parseInt(document.getElementById('dca-total-allocation').textContent.match(/\d+/)[0] || 0);
             const submitBtn = document.getElementById('dcaSimulateBtn');
 
-            let isValid = true;
+            console.log('Validation:', { startDate, capital, cryptosLength: cryptos.length, totalAllocation });
+
             ['dca-start-date-error', 'dca-capital-error', 'dca-cryptos-error'].forEach(id => {
                 document.getElementById(id).classList.add('hidden');
             });
+
+            let isValid = true;
 
             if (!startDate) {
                 document.getElementById('dca-start-date-error').classList.remove('hidden');
@@ -564,6 +693,8 @@
             }
             if (totalAllocation !== 100) {
                 isValid = false;
+            } else {
+                console.log(`Validation: Total Allocation is ${totalAllocation}%`);
             }
 
             submitBtn.disabled = !isValid;
@@ -572,14 +703,30 @@
         }
 
         function setupCointegrationForm() {
-            // First Crypto Selector
             const crypto1Container = document.getElementById('crypto1-container');
+            const crypto2Container = document.getElementById('crypto2-container');
+            if (!crypto1Container || !crypto2Container) {
+                console.error('crypto1-container or crypto2-container not found');
+                return;
+            }
+
+            let existingCrypto1 = crypto1Container.querySelector('select#crypto1');
+            let existingCrypto2 = crypto2Container.querySelector('select#crypto2');
+            if (existingCrypto1 && existingCrypto1.tomselect) existingCrypto1.tomselect.destroy();
+            if (existingCrypto2 && existingCrypto2.tomselect) existingCrypto2.tomselect.destroy();
+
             const crypto1Select = document.createElement('select');
             crypto1Select.name = 'crypto1';
             crypto1Select.id = 'crypto1';
             crypto1Select.className = 'w-full p-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400';
             crypto1Select.setAttribute('aria-label', 'Select first cryptocurrency');
             crypto1Select.required = true;
+
+            const emptyOption1 = document.createElement('option');
+            emptyOption1.value = '';
+            emptyOption1.textContent = '';
+            emptyOption1.selected = true;
+            crypto1Select.appendChild(emptyOption1);
 
             cryptoOptions.forEach(option => {
                 const opt = document.createElement('option');
@@ -588,6 +735,7 @@
                 crypto1Select.appendChild(opt);
             });
 
+            crypto1Container.innerHTML = '';
             crypto1Container.appendChild(crypto1Select);
 
             new TomSelect('#crypto1', {
@@ -595,22 +743,29 @@
                 maxItems: 1,
                 placeholder: 'Select first crypto...',
                 closeAfterSelect: true,
+                valueField: 'value',
+                labelField: 'text',
+                searchField: ['text'],
+                create: false,
                 onInitialize: function() {
-                    console.log('Conintegration Crypto Selector Initialized');
+                    this.clear();
+                    console.log('Crypto1 Selector Initialized');
                 },
-                onChange: () => {
-                    validateCointegrationForm();
-                }
+                onChange: validateCointegrationForm
             });
 
-            // Second Crypto Selector
-            const crypto2Container = document.getElementById('crypto2-container');
             const crypto2Select = document.createElement('select');
             crypto2Select.name = 'crypto2';
             crypto2Select.id = 'crypto2';
             crypto2Select.className = 'w-full p-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400';
             crypto2Select.setAttribute('aria-label', 'Select second cryptocurrency');
             crypto2Select.required = true;
+
+            const emptyOption2 = document.createElement('option');
+            emptyOption2.value = '';
+            emptyOption2.textContent = '';
+            emptyOption2.selected = true;
+            crypto2Select.appendChild(emptyOption2);
 
             cryptoOptions.forEach(option => {
                 const opt = document.createElement('option');
@@ -619,18 +774,23 @@
                 crypto2Select.appendChild(opt);
             });
 
+            crypto2Container.innerHTML = '';
             crypto2Container.appendChild(crypto2Select);
 
             new TomSelect('#crypto2', {
                 options: cryptoOptions,
                 maxItems: 1,
                 placeholder: 'Select second crypto...',
-                closeAfterSelect: true,onInitialize: function() {
-                    console.log('Conintegration Crypto Selector Initialized');
+                closeAfterSelect: true,
+                valueField: 'value',
+                labelField: 'text',
+                searchField: ['text'],
+                create: false,
+                onInitialize: function() {
+                    this.clear();
+                    console.log('Crypto2 Selector Initialized');
                 },
-                onChange: () => {
-                    validateCointegrationForm();
-                }
+                onChange: validateCointegrationForm
             });
 
             document.getElementById('cointegrationForm').addEventListener('submit', e => {
@@ -646,6 +806,8 @@
             ['coin-start-date', 'coin-end-date'].forEach(id => {
                 document.getElementById(id)?.addEventListener('input', validateCointegrationForm);
             });
+
+            validateCointegrationForm();
         }
 
         function validateCointegrationForm() {
