@@ -68,7 +68,7 @@ app.config.update(
 )
 
 # Initialize Celery
-celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'], backend=app.config['CELERY_RESULT_BACKEND'])
+celery = Celery(app.name, broker=redis_url, backend=redis_url)
 celery.conf.update(app.config)
 
 # Binance API client - Use environment variables for credentials
@@ -2018,3 +2018,4 @@ def create_distribution_plots(returns, portfolio_index):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port, debug=False)
+

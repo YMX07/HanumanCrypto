@@ -19,3 +19,4 @@ gunicorn==22.0.0
 # Utilities
 appdirs>=1.4.4,<2.0
 gunicorn==22.0.0
+statsmodels==0.14.4
