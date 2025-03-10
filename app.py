@@ -15,6 +15,7 @@ from scipy import stats
 import traceback
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import matplotlib as plt
 from datetime import timedelta
 from sklearn.preprocessing import MinMaxScaler
 from keras import Model, Input

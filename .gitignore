@@ -49,6 +49,7 @@ desktop.ini
 .vscode/
 *.sublime-workspace
 *.sublime-project
+*.idea/workspace.xml
 
 # Docker and Heroku-Specific
 Dockerfile.local
