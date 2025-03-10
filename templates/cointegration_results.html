@@ -35,9 +35,6 @@
                 <p><strong>Total P&L:</strong> ${{ result.total_pnl }}</p>
                 <p><strong>Win Rate:</strong> {{ result.win_rate }}%</p>
                 <iframe src="{{ url_for('static', filename=result.trading_pnl_chart) }}" class="w-full h-[600px] border-0" title="Trading Profit and Loss"></iframe>
-                <div class="text-center mt-2">
-                    <a href="{{ url_for('static', filename=result.trading_pnl_chart) }}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700" target="_blank">View Interactive Chart</a>
-                </div>
             {% endif %}
         </section>
     </main>

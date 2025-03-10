@@ -82,12 +82,6 @@
                                 <iframe src="{{ url_for('static', filename=result.interactive_portfolio) }}" width="100%" height="600" frameborder="0" class="rounded-lg"></iframe>
                             </div>
                         {% endif %}
-                        {% if result.interactive_distribution %}
-                            <div>
-                                <h3 class="text-xl font-medium text-gray-200 mb-2">Returns Distribution</h3>
-                                <iframe src="{{ url_for('static', filename=result.interactive_distribution) }}" width="100%" height="600" frameborder="0" class="rounded-lg"></iframe>
-                            </div>
-                        {% endif %}
                         {% if result.monte_carlo_chart %}
                             <div>
                                 <h3 class="text-xl font-medium text-gray-200 mb-2">Monte Carlo Projection</h3>

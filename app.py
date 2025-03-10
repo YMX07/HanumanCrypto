@@ -2014,7 +2014,6 @@ def create_distribution_plots(returns, portfolio_index):
     fig.write_html(interactive_dist_path)
     return f'portfolio_{portfolio_index}_distribution_interactive.html'
 
-
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port, debug=False)
